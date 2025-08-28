@@ -4,20 +4,20 @@ $payload = file_get_contents('php://input');
 $headers = getallheaders();
 
 if (!isset($headers['X-Hub-Signature-256'])) {
-  http_response_code(403);
-  die("No signature");
+    http_response_code(403);
+    die("No signature");
 }
 
 $signature = "sha256=" . hash_hmac('sha256', $payload, $secret);
 
 if (!hash_equals($signature, $headers['X-Hub-Signature-256'])) {
-  http_response_code(403);
-  die("Invalid signature");
+    http_response_code(403);
+    die("Invalid signature");
 }
 
 // Deploy command
 $cmd = "
-cd /home/asadvanc/public_html/dashboard &&
+cd /home/asadvanc/public_html &&
 git fetch --all &&
 git reset --hard origin/main 2>&1
 ";
