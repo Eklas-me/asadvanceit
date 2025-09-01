@@ -11,16 +11,16 @@ class AdvancedAdmin
         // Set the timezone
         date_default_timezone_set('Asia/Dhaka');
         // Local Database Credentials
-        // $dbHost = 'localhost';
-        // $dbUser = 'root';
-        // $dbPass = '';
-        // $dbName = 'asadvanc_advanced it';
+        $dbHost = 'localhost';
+        $dbUser = 'root';
+        $dbPass = '';
+        $dbName = 'asadvanc_advanced it';
 
         // Online Database Credentials
-        $dbHost = 'localhost';
-        $dbUser = 'asadvanc_eklas';
-        $dbPass = '$kVNN@f1+FS';
-        $dbName = 'asadvanc_advanced it';
+        // $dbHost = 'localhost';
+        // $dbUser = 'asadvanc_eklas';
+        // $dbPass = '$kVNN@f1+FS';
+        // $dbName = 'asadvanc_advanced it';
 
         // Using MySQLi's object-oriented style
         $this->conn = mysqli_connect($dbHost, $dbUser, $dbPass, $dbName);
@@ -990,8 +990,8 @@ class AdvancedAdmin
             return "Error: " . mysqli_error($this->conn);
         }
     }
-    
-        public function get_workers_report($start_date, $end_date)
+
+    public function get_workers_report($start_date, $end_date)
     {
         $query = "
         SELECT u.id as user_id,
@@ -1017,20 +1017,16 @@ class AdvancedAdmin
         $stmt->close();
         return $data;
     }
-    
+
     public function count_active_last30min()
-{
-    $query = "
+    {
+        $query = "
         SELECT COUNT(DISTINCT user_id) AS active_count
         FROM live_tokens
         WHERE insert_time >= (NOW() - INTERVAL 30 MINUTE)
     ";
-    $result = $this->conn->query($query);
-    $row = $result->fetch_assoc();
-    return $row['active_count'] ?? 0;
-}
-
-
- 
-    
+        $result = $this->conn->query($query);
+        $row = $result->fetch_assoc();
+        return $row['active_count'] ?? 0;
+    }
 }
