@@ -1,8 +1,11 @@
 <div class="sidebar" data-background-color="dark">
   <div class="sidebar-logo">
     <div class="logo-header" data-background-color="dark">
-      <a href="<?php if (isset($_SESSION['userRole']) && $_SESSION['userRole'] == 'admin') { echo 'admin_dashboard.php'; } else { echo 'user_dashboard.php'; } ?>"
-        class="logo">
+      <a href="<?php if (isset($_SESSION['userRole']) && $_SESSION['userRole'] == 'admin') {
+                  echo 'admin_dashboard.php';
+                } else {
+                  echo 'user_dashboard.php';
+                } ?>" class="logo">
         <h4 class="logo-text text-white ml-3 mt-2 mb-0 ">Advance IT</h4>
       </a>
       <div class="nav-toggle">
@@ -22,8 +25,11 @@
     <div class="sidebar-content">
       <ul class="nav nav-secondary">
         <li class="nav-item">
-          <a href="<?php if (isset($_SESSION['userRole']) && $_SESSION['userRole'] == 'admin') { echo 'admin_dashboard.php'; } else { echo 'user_dashboard.php'; }?>"
-            class="collapsed">
+          <a href="<?php if (isset($_SESSION['userRole']) && $_SESSION['userRole'] == 'admin') {
+                      echo 'admin_dashboard.php';
+                    } else {
+                      echo 'user_dashboard.php';
+                    } ?>" class="collapsed">
             <i class="fas fa-home"></i>
             <p>Dashboard</p>
           </a>
@@ -42,13 +48,13 @@
           </a>
           <div class="collapse" id="tokens">
             <ul class="nav nav-collapse">
-              <?php if (isset($_SESSION['userRole']) && $_SESSION['userRole'] == 'admin') {?>
+              <?php if (isset($_SESSION['userRole']) && $_SESSION['userRole'] == 'admin') { ?>
               <li>
                 <a href="all_token.php">
                   <span class="sub-item">All Tokens</span>
                 </a>
               </li>
-              <?php }?>
+              <?php } ?>
               <li>
                 <a href="add_live_token.php">
                   <span class="sub-item">Add Tokens</span>
@@ -63,7 +69,7 @@
           </div>
         </li>
         <!-- Check if the session 'role' is set admin before trying to access it -->
-        <?php if (isset($_SESSION['userRole']) && $_SESSION['userRole'] == 'admin') {?>
+        <?php if (isset($_SESSION['userRole']) && $_SESSION['userRole'] == 'admin') { ?>
         <li class="nav-item">
           <a data-bs-toggle="collapse" href="#tables">
             <i class="fas fa-users"></i>
@@ -95,13 +101,50 @@
             <p>Notifications</p>
           </a>
         </li>
-        <?php }?>
-        <!-- <li class="nav-item">
-          <a data-bs-toggle="collapse" href="#dashboard" class="collapsed" aria-expanded="false">
-            <i class="fas fa-cog"></i>
-            <p>Settings</p>
+        <?php } ?>
+
+        <!-- Google Sheets Embedding -->
+        <li class="nav-item">
+          <a data-bs-toggle="collapse" href="#sheets">
+            <i class="fas fa-users"></i>
+            <p>Sheets</p>
+            <span class="caret"></span>
           </a>
-        </li> -->
+          <div class="collapse" id="sheets">
+            <ul class="nav nav-collapse">
+              <li>
+                <a href="#">
+                  <span class="sub-item">Morning 8 Hours Female</span>
+                </a>
+              </li>
+              <li>
+                <a href="morning_8_hours.php">
+                  <span class="sub-item">Morning 8 Hours</span>
+                </a>
+              </li>
+              <li>
+                <a href="#">
+                  <span class="sub-item">Evening 8 Hours</span>
+                </a>
+              </li>
+              <li>
+                <a href="#">
+                  <span class="sub-item">Night 8 Hours</span>
+                </a>
+              </li>
+              <li>
+                <a href="#">
+                  <span class="sub-item">Day 12 Hours</span>
+                </a>
+              </li>
+              <li>
+                <a href="#">
+                  <span class="sub-item">Night 12 Hours</span>
+                </a>
+              </li>
+          </div>
+        </li>
+
       </ul>
     </div>
   </div>

@@ -48,16 +48,16 @@ $userEmail = $_SESSION['userEmail'];
       <div class="container">
         <div class="page-inner">
 
-          <?php 
+          <?php
           // Check the user role and render views accordingly
           if (isset($view)) {
             // Admin-specific views
             if ($userRole === 'admin') {
               if ($view == "dashboard") {
                 include("./view/dash_view.php");  // Admin dashboard
-              }else if ($view == "add_workers") {
+              } else if ($view == "add_workers") {
                 include("./view/add_workers_view.php");  // Admin-only feature
-              }else if ($view == "manage_workers") {
+              } else if ($view == "manage_workers") {
                 include("./view/manage_workers_view.php");  // Admin-only feature
               } else if ($view == "all_token") {
                 include("./view/all_token_view.php");  // Admin-only feature
@@ -79,10 +79,12 @@ $userEmail = $_SESSION['userEmail'];
               include("./view/my_token_view.php");  // Admin-only feature
             } elseif ($view == "my_profile") {
               include("./view/my_profile_view.php");  // Admin-only feature
+            } elseif ($view == "morning_8_hours") {
+              include("./view/morning_8_hours_view.php");  // Admin-only feature
             }
-            
+
             // You can add more views here based on your requirements
-          } 
+          }
           ?>
 
         </div>
