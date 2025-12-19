@@ -210,7 +210,7 @@
                     <h3 class="aero-card-title">Cache Management</h3>
                 </div>
                 <div class="card-body">
-                    <p class="var(--text-muted) mb-4">
+                    <p class="text-muted mb-4">
                         Clear the system cache to refresh data such as the "Workers List" and "Token Counts".
                         Use this if you have manually updated the database or if you suspect data is stale.
                     </p>
