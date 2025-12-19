@@ -29,15 +29,23 @@ class SettingsController extends Controller
 
         if ($request->hasFile('logo')) {
             try {
+                if (!$request->file('logo')->isValid()) {
+                    return back()->with('error', 'Uploaded logo is not valid.');
+                }
+
                 $file = $request->file('logo');
                 $filename = 'logo_' . time() . '.' . $file->getClientOriginalExtension();
                 $path = public_path('uploads/site');
 
                 if (!file_exists($path)) {
-                    mkdir($path, 0755, true);
+                    if (!mkdir($path, 0755, true)) {
+                        return back()->with('error', "Failed to create directory: $path. Please check folder permissions.");
+                    }
                 }
 
-                $file->move($path, $filename);
+                if (!$file->move($path, $filename)) {
+                    return back()->with('error', 'Failed to move uploaded file. Check permissions of ' . $path);
+                }
 
                 setSetting('site_logo', 'uploads/site/' . $filename);
 
@@ -59,15 +67,23 @@ class SettingsController extends Controller
 
         if ($request->hasFile('favicon')) {
             try {
+                if (!$request->file('favicon')->isValid()) {
+                    return back()->with('error', 'Uploaded favicon is not valid.');
+                }
+
                 $file = $request->file('favicon');
                 $filename = 'favicon_' . time() . '.' . $file->getClientOriginalExtension();
                 $path = public_path('uploads/site');
 
                 if (!file_exists($path)) {
-                    mkdir($path, 0755, true);
+                    if (!mkdir($path, 0755, true)) {
+                        return back()->with('error', "Failed to create directory: $path. Please check folder permissions.");
+                    }
                 }
 
-                $file->move($path, $filename);
+                if (!$file->move($path, $filename)) {
+                    return back()->with('error', 'Failed to move uploaded file. Check permissions of ' . $path);
+                }
 
                 setSetting('site_favicon', 'uploads/site/' . $filename);
 
