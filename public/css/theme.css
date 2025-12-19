@@ -1,0 +1,494 @@
+/* ============================================
+   AERO MINIMAL UI THEME
+   Ultra-Clean + Soft Glass + Neutral Cyber
+   Light + Dark Modes
+   ============================================ */
+
+:root {
+    /* ========== AERO LIGHT MODE (Default) ========== */
+    --bg-primary: #F5F6FA;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #FAFBFC;
+
+    /* Cards & Surfaces */
+    --card-bg: #FFFFFF;
+    --card-border: #E2E6EA;
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+
+    /* Text Colors */
+    --text-primary: #1F1F1F;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+    --text-inverse: #FFFFFF;
+
+    /* Accent Colors */
+    --accent-blue: #3B82F6;
+    --accent-purple: #8B5CF6;
+    --accent-aqua: #14B8A6;
+    --accent-gradient: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+
+    /* Borders */
+    --border-color: #E2E6EA;
+    --border-light: #F3F4F6;
+
+    /* States */
+    --hover-bg: #F9FAFB;
+    --active-bg: #F3F4F6;
+
+    /* Sidebar */
+    --sidebar-bg: #FFFFFF;
+    --sidebar-border: #E2E6EA;
+    --sidebar-hover: #F9FAFB;
+    --sidebar-active: #F3F4F6;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08);
+}
+
+/* ========== AERO NOIR (Dark Mode) ========== */
+[data-theme="dark"] {
+    --bg-primary: #0F1115;
+    --bg-secondary: #16181E;
+    --bg-tertiary: #1A1D24;
+
+    /* Cards & Surfaces */
+    --card-bg: rgba(22, 24, 30, 0.8);
+    --card-border: rgba(255, 255, 255, 0.06);
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
+    --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+
+    /* Text Colors */
+    --text-primary: rgba(255, 255, 255, 0.9);
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --text-muted: rgba(255, 255, 255, 0.4);
+    --text-inverse: #0F1115;
+
+    /* Accent Colors (slightly brighter in dark mode) */
+    --accent-blue: #60A5FA;
+    --accent-purple: #A78BFA;
+    --accent-aqua: #2DD4BF;
+    --accent-gradient: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+
+    /* Borders */
+    --border-color: rgba(255, 255, 255, 0.06);
+    --border-light: rgba(255, 255, 255, 0.04);
+
+    /* States */
+    --hover-bg: rgba(255, 255, 255, 0.05);
+    --active-bg: rgba(255, 255, 255, 0.08);
+
+    /* Sidebar */
+    --sidebar-bg: rgba(22, 24, 30, 0.6);
+    --sidebar-border: rgba(255, 255, 255, 0.06);
+    --sidebar-hover: rgba(255, 255, 255, 0.05);
+    --sidebar-active: rgba(255, 255, 255, 0.08);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.7);
+}
+
+/* ========== BASE STYLES ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========== AERO CARDS ========== */
+.aero-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.aero-card:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.aero-card-header {
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.aero-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* ========== STAT CARDS ========== */
+.aero-stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.aero-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent-gradient);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.aero-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.aero-stat-card:hover::before {
+    opacity: 1;
+}
+
+.aero-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 12px;
+    background: var(--hover-bg);
+    color: var(--accent-blue);
+    transition: all 0.2s ease;
+}
+
+.aero-stat-card:hover .aero-stat-icon {
+    background: var(--accent-gradient);
+    color: white;
+    transform: scale(1.05);
+}
+
+.aero-stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.aero-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.aero-stat-change {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+/* ========== BUTTONS ========== */
+.aero-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    gap: 8px;
+}
+
+.aero-btn:hover {
+    background: var(--hover-bg);
+    transform: scale(1.02);
+    border-color: var(--accent-blue);
+}
+
+.aero-btn-primary {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: white;
+}
+
+.aero-btn-primary:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+.aero-btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* ========== INPUTS ========== */
+.aero-input,
+.aero-select,
+.aero-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.aero-input:focus,
+.aero-select:focus,
+.aero-textarea:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.aero-input::placeholder,
+.aero-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.aero-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* ========== BOOTSTRAP OVERRIDES (DARK MODE) ========== */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .input-group-text {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background-color: var(--card-bg) !important;
+    border-color: var(--accent-blue) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .form-control:disabled,
+[data-theme="dark"] .form-control[readonly] {
+    background-color: var(--bg-tertiary) !important;
+    opacity: 0.7;
+}
+
+/* Custom switch for dark mode visibility */
+[data-theme="dark"] .form-check-input {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .form-check-input:checked {
+    background-color: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+/* ========== BOOTSTRAP TEXT OVERRIDES (DARK MODE) ========== */
+[data-theme="dark"] .text-muted {
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] small.text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* ========== TABLES ========== */
+.aero-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.aero-table thead {
+    background: var(--bg-tertiary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.aero-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.aero-table td {
+    padding: 14px 16px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.aero-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.aero-table tbody tr:hover {
+    background: var(--hover-bg);
+}
+
+/* ========== BADGES ========== */
+.aero-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.aero-badge-primary {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-blue);
+}
+
+.aero-badge-success {
+    background: rgba(20, 184, 166, 0.1);
+    color: var(--accent-aqua);
+}
+
+.aero-badge-warning {
+    background: rgba(251, 191, 36, 0.1);
+    color: #F59E0B;
+}
+
+.aero-badge-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+}
+
+/* ========== ALERTS ========== */
+.aero-alert {
+    padding: 14px 16px;
+    border-radius: 8px;
+    border-left: 3px solid;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.aero-alert-success {
+    background: rgba(20, 184, 166, 0.1);
+    border-color: var(--accent-aqua);
+    color: var(--text-primary);
+}
+
+.aero-alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #EF4444;
+    color: var(--text-primary);
+}
+
+.aero-alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: var(--accent-blue);
+    color: var(--text-primary);
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+.skeleton {
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--hover-bg) 50%, var(--bg-tertiary) 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+}
+
+/* ========== UTILITY CLASSES ========== */
+.text-gradient {
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.divider {
+    height: 1px;
+    background: var(--border-light);
+    margin: 20px 0;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .aero-card {
+        padding: 16px;
+    }
+
+    .aero-stat-card {
+        padding: 16px;
+    }
+}
