@@ -20,43 +20,6 @@ use App\Http\Controllers\Auth\RegisterController;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
-// Debug Path Mismatch & Fix
-Route::get('/debug-path-fix', function () {
-    $serverDocRoot = $_SERVER['DOCUMENT_ROOT']; // e.g. /home/user/public_html
-    $laravelPublicPath = public_path(); // e.g. /home/user/laravel_core/public
-
-    $target = storage_path('app/public');
-    $link = $serverDocRoot . '/storage';
-
-    $fixResult = null;
-    if (request()->has('fix')) {
-        try {
-            if (file_exists($link)) {
-                // If it's a directory (wrongly created folder), try to remove? safer not to.
-                // If it's a symlink, unlink it.
-                if (is_link($link)) {
-                    unlink($link);
-                }
-            }
-            symlink($target, $link);
-            $fixResult = "Success! Created symlink: $link -> $target";
-        } catch (\Exception $e) {
-            $fixResult = "Error: " . $e->getMessage();
-        }
-    }
-
-    return response()->json([
-        'document_root' => $serverDocRoot,
-        'laravel_public_path' => $laravelPublicPath,
-        'paths_match' => rtrim($serverDocRoot, '/') === rtrim($laravelPublicPath, '/'),
-        'symlink_should_be_at' => $link,
-        'symlink_target_should_be' => $target,
-        'link_exists_at_doc_root' => file_exists($link),
-        'link_is_symlink' => is_link($link),
-        'fix_result' => $fixResult,
-        'instruction' => 'If paths_match is false, add ?fix=true to this URL to create the correct symlink.'
-    ]);
-});
 
 
 // Authentication Routes (Guest only - redirect if logged in)
