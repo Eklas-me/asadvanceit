@@ -83,8 +83,25 @@
                                     <td>{{ $user->phone }}</td>
                                     <td>{{ $user->shift }}</td>
                                     <td>
-                                        @if($user->profile_photo)
-                                            <img src="{{ asset('uploads/' . $user->profile_photo) }}"
+                                    <td>
+                                        @php
+                                            $profilePhoto = $user->profile_photo;
+                                            $defaultPhoto = asset('uploads/user.png'); // Or N/A text if preferred, but image is consistent
+                                            $photoUrl = null;
+
+                                            if ($profilePhoto) {
+                                                if (file_exists(public_path('uploads/' . $profilePhoto))) {
+                                                    $photoUrl = asset('uploads/' . $profilePhoto);
+                                                } elseif (file_exists(public_path('storage/profile-photos/' . $profilePhoto))) {
+                                                    $photoUrl = asset('storage/profile-photos/' . $profilePhoto);
+                                                } elseif (file_exists(public_path('storage/' . $profilePhoto))) {
+                                                    $photoUrl = asset('storage/' . $profilePhoto);
+                                                }
+                                            }
+                                        @endphp
+
+                                        @if($photoUrl)
+                                            <img src="{{ $photoUrl }}"
                                                 style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
                                         @else
                                             <span style="color: var(--text-muted);">N/A</span>

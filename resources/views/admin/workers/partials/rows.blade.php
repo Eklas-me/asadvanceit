@@ -8,8 +8,23 @@
         <td>{{ $workers->firstItem() + $loop->index }}</td>
         <td>{{ $worker->name }}</td>
         <td>
-            <img src="{{ $worker->profile_photo ? asset('uploads/' . $worker->profile_photo) : asset('uploads/user.png') }}"
-                alt="Profile" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
+            @php
+                $profilePhoto = $worker->profile_photo;
+                $defaultPhoto = asset('uploads/user.png');
+                $photoUrl = $defaultPhoto;
+
+                if ($profilePhoto) {
+                    if (file_exists(public_path('uploads/' . $profilePhoto))) {
+                        $photoUrl = asset('uploads/' . $profilePhoto);
+                    } elseif (file_exists(public_path('storage/profile-photos/' . $profilePhoto))) {
+                        $photoUrl = asset('storage/profile-photos/' . $profilePhoto);
+                    } elseif (file_exists(public_path('storage/' . $profilePhoto))) {
+                        $photoUrl = asset('storage/' . $profilePhoto);
+                    }
+                }
+            @endphp
+            <img src="{{ $photoUrl }}" alt="Profile"
+                style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
         </td>
         <td>{{ $worker->phone }}</td>
         <td>{{ $worker->shift }}</td>
