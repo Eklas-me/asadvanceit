@@ -8,7 +8,7 @@
         <td>{{ $workers->firstItem() + $loop->index }}</td>
         <td>{{ $worker->name }}</td>
         <td>
-            <img src="{{ $worker->profile_photo ? asset('storage/' . $worker->profile_photo) : asset('uploads/user.png') }}"
+            <img src="{{ $worker->profile_photo ? asset('uploads/' . $worker->profile_photo) : asset('uploads/user.png') }}"
                 alt="Profile" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
         </td>
         <td>{{ $worker->phone }}</td>
