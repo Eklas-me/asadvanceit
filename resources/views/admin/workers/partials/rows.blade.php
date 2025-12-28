@@ -1,9 +1,14 @@
 @foreach($workers as $index => $worker)
-    <tr>
-        <td>{{ ($workers->currentPage() - 1) * $workers->perPage() + $loop->iteration }}</td>
+    <tr class="worker-row" data-id="{{ $worker->id }}">
+        <td style="padding-left: 1.5rem;">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input custom-checkbox worker-checkbox" value="{{ $worker->id }}">
+            </div>
+        </td>
+        <td>{{ $workers->firstItem() + $loop->index }}</td>
         <td>{{ $worker->name }}</td>
         <td>
-            <img src="{{ $worker->profile_photo ? asset('uploads/' . $worker->profile_photo) : asset('uploads/user.png') }}"
+            <img src="{{ $worker->profile_photo ? asset('storage/' . $worker->profile_photo) : asset('uploads/user.png') }}"
                 alt="Profile" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">
         </td>
         <td>{{ $worker->phone }}</td>

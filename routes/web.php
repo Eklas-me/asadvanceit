@@ -54,6 +54,7 @@ Route::middleware(['auth'])->group(function () {
         Route::match(['get', 'post'], 'admin/users/{id}/reject', [App\Http\Controllers\WorkerController::class, 'reject'])->name('admin.workers.reject');
         Route::post('admin/users/{id}/suspend', [App\Http\Controllers\WorkerController::class, 'suspend'])->name('admin.workers.suspend');
         Route::post('admin/users/{id}/activate', [App\Http\Controllers\WorkerController::class, 'activate'])->name('admin.workers.activate');
+        Route::post('admin/workers/bulk-action', [App\Http\Controllers\WorkerController::class, 'bulkAction'])->name('admin.workers.bulk_action');
         Route::resource('admin/workers', App\Http\Controllers\WorkerController::class, ['as' => 'admin']);
 
         // Token Management (Admin Index)

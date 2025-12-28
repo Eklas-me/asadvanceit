@@ -215,4 +215,58 @@ class WorkerController extends Controller
         $admins = \App\Models\User::where('role', 'admin')->orderBy('created_at', 'desc')->get();
         return view('admin.workers.admins', compact('admins'));
     }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:users,id',
+            'action' => 'required|in:suspend,activate,delete,reject',
+            'delete_data' => 'nullable|in:on,off',
+        ]);
+
+        $ids = $request->input('ids');
+        $action = $request->input('action');
+        $count = count($ids);
+
+        switch ($action) {
+            case 'suspend':
+                \App\Models\User::whereIn('id', $ids)->update(['status' => 'suspended']);
+                session()->flash('success', "$count users suspended successfully.");
+                return response()->json(['success' => true, 'message' => "$count users suspended successfully."]);
+
+            case 'activate':
+                \App\Models\User::whereIn('id', $ids)->update(['status' => 'active']);
+                session()->flash('success', "$count users activated successfully.");
+                return response()->json(['success' => true, 'message' => "$count users activated successfully."]);
+
+            case 'reject':
+                \App\Models\User::whereIn('id', $ids)->update(['status' => 'rejected']);
+                session()->flash('success', "$count users rejected successfully.");
+                return response()->json(['success' => true, 'message' => "$count users rejected successfully."]);
+
+            case 'delete':
+                $users = \App\Models\User::whereIn('id', $ids)->get();
+                $deletedCount = 0;
+
+                foreach ($users as $user) {
+                    if ($user->isCoreAdmin())
+                        continue;
+
+                    if ($request->input('delete_data') === 'on') {
+                        \App\Models\Message::where('sender_id', $user->id)->delete();
+                        \App\Models\Message::where('receiver_id', $user->id)->delete();
+                        // liveTokens usually cascade or are handled here if needed
+                    } else {
+                        \App\Models\LiveToken::where('user_id', $user->id)->update(['user_id' => null]);
+                    }
+                    $user->delete();
+                    $deletedCount++;
+                }
+                session()->flash('success', "$deletedCount users deleted successfully.");
+                return response()->json(['success' => true, 'message' => "$deletedCount users deleted successfully."]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Invalid action.']);
+    }
 }
