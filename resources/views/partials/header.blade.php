@@ -24,7 +24,7 @@
             <a class="nav-profile" href="#" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="profile-avatar">
                     @if(auth()->user()->profile_photo)
-                        <img src="{{ asset('uploads/' . auth()->user()->profile_photo) }}" alt="Profile">
+                        <img src="{{ asset('storage/' . auth()->user()->profile_photo) }}" alt="Profile">
                     @else
                         <span class="avatar-initial">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
                     @endif
