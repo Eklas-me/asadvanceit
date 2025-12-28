@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 
+use Illuminate\Support\Facades\Storage;
+
 class SettingsController extends Controller
 {
     public function index()
@@ -33,21 +35,11 @@ class SettingsController extends Controller
                     return back()->with('error', 'Uploaded logo is not valid.');
                 }
 
-                $file = $request->file('logo');
-                $filename = 'logo_' . time() . '.' . $file->getClientOriginalExtension();
-                $path = public_path('uploads/site');
+                // Store file public path relative
+                $path = $request->file('logo')->store('site-settings', 'public');
 
-                if (!file_exists($path)) {
-                    if (!mkdir($path, 0755, true)) {
-                        return back()->with('error', "Failed to create directory: $path. Please check folder permissions.");
-                    }
-                }
-
-                if (!$file->move($path, $filename)) {
-                    return back()->with('error', 'Failed to move uploaded file. Check permissions of ' . $path);
-                }
-
-                setSetting('site_logo', 'uploads/site/' . $filename);
+                // Save 'storage/...' so asset() helper works directly
+                setSetting('site_logo', 'storage/' . $path);
 
                 return back()->with('success', 'Logo updated successfully!');
             } catch (\Exception $e) {
@@ -71,21 +63,8 @@ class SettingsController extends Controller
                     return back()->with('error', 'Uploaded favicon is not valid.');
                 }
 
-                $file = $request->file('favicon');
-                $filename = 'favicon_' . time() . '.' . $file->getClientOriginalExtension();
-                $path = public_path('uploads/site');
-
-                if (!file_exists($path)) {
-                    if (!mkdir($path, 0755, true)) {
-                        return back()->with('error', "Failed to create directory: $path. Please check folder permissions.");
-                    }
-                }
-
-                if (!$file->move($path, $filename)) {
-                    return back()->with('error', 'Failed to move uploaded file. Check permissions of ' . $path);
-                }
-
-                setSetting('site_favicon', 'uploads/site/' . $filename);
+                $path = $request->file('favicon')->store('site-settings', 'public');
+                setSetting('site_favicon', 'storage/' . $path);
 
                 return back()->with('success', 'Favicon updated successfully!');
             } catch (\Exception $e) {
@@ -99,8 +78,14 @@ class SettingsController extends Controller
     public function removeLogo()
     {
         $currentLogo = getSetting('site_logo');
-        if ($currentLogo && file_exists(public_path($currentLogo))) {
-            @unlink(public_path($currentLogo));
+        if ($currentLogo) {
+            // Check if it's a storage path
+            if (str_starts_with($currentLogo, 'storage/')) {
+                $relativePath = str_replace('storage/', '', $currentLogo);
+                Storage::disk('public')->delete($relativePath);
+            } elseif (file_exists(public_path($currentLogo))) {
+                @unlink(public_path($currentLogo));
+            }
         }
 
         \App\Models\SiteSetting::where('key', 'site_logo')->delete();
@@ -111,8 +96,14 @@ class SettingsController extends Controller
     public function removeFavicon()
     {
         $currentFavicon = getSetting('site_favicon');
-        if ($currentFavicon && file_exists(public_path($currentFavicon))) {
-            @unlink(public_path($currentFavicon));
+        if ($currentFavicon) {
+            // Check if it's a storage path
+            if (str_starts_with($currentFavicon, 'storage/')) {
+                $relativePath = str_replace('storage/', '', $currentFavicon);
+                Storage::disk('public')->delete($relativePath);
+            } elseif (file_exists(public_path($currentFavicon))) {
+                @unlink(public_path($currentFavicon));
+            }
         }
 
         \App\Models\SiteSetting::where('key', 'site_favicon')->delete();

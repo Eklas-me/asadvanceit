@@ -29,7 +29,7 @@
                     <div class="profile-cover"></div>
                     <div class="profile-avatar-wrapper">
                         @if($user->profile_photo)
-                            <img src="{{ asset('uploads/' . $user->profile_photo) }}" alt="{{ $user->name }}"
+                            <img src="{{ asset('storage/' . $user->profile_photo) }}" alt="{{ $user->name }}"
                                 class="profile-avatar-large">
                         @else
                             <div class="profile-avatar-large">

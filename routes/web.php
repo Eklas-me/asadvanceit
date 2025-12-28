@@ -21,34 +21,7 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-// Debug Image Paths
-Route::get('/debug-img-paths', function () {
-    return response()->json([
-        'public_path' => public_path(),
-        'base_path' => base_path(),
-        'storage_path' => storage_path(),
-        'asset_url' => asset('storage/test.png'),
-        'storage_link_exists' => file_exists(public_path('storage')),
-        'env_app_url' => env('APP_URL'),
-    ]);
-});
 
-// Fix Storage Link
-Route::get('/fix-storage-link', function () {
-    $target = storage_path('app/public');
-    $link = public_path('storage');
-
-    if (file_exists($link)) {
-        return 'Link already exists at: ' . $link;
-    }
-
-    try {
-        symlink($target, $link);
-        return 'Symlink created successfully: ' . $link . ' -> ' . $target;
-    } catch (\Exception $e) {
-        return 'Failed to create symlink: ' . $e->getMessage();
-    }
-});
 
 // Authentication Routes (Guest only - redirect if logged in)
 Route::middleware('guest')->group(function () {

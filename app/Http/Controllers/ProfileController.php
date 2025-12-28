@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 
+use Illuminate\Support\Facades\Storage;
+
 class ProfileController extends Controller
 {
     public function show()
@@ -34,13 +36,20 @@ class ProfileController extends Controller
         // Handle profile photo upload
         if ($request->hasFile('profile_photo')) {
             // Delete old photo if exists
-            if ($user->profile_photo && file_exists(public_path('uploads/' . $user->profile_photo))) {
-                unlink(public_path('uploads/' . $user->profile_photo));
+            if ($user->profile_photo) {
+                // Check if it's a legacy path or storage path? 
+                // We'll try to delete from disk. If it fails (file not found), it's fine.
+                Storage::disk('public')->delete($user->profile_photo);
+
+                // Also attempt legacy unlink if it was in uploads/
+                if (file_exists(public_path('uploads/' . $user->profile_photo))) {
+                    @unlink(public_path('uploads/' . $user->profile_photo));
+                }
             }
 
-            $photoName = time() . '_' . $request->file('profile_photo')->getClientOriginalName();
-            $request->file('profile_photo')->move(public_path('uploads'), $photoName);
-            $user->profile_photo = $photoName;
+            // Store new photo
+            $path = $request->file('profile_photo')->store('profile-photos', 'public');
+            $user->profile_photo = $path;
         }
 
         $user->save();
