@@ -514,7 +514,8 @@ body {
 }
 
 /* ========== DARK MODE: BOOTSTRAP TABLE OVERRIDES ========== */
-[data-theme="dark"] .table {
+[data-theme="dark"] .table,
+[data-theme="dark"] .table-responsive {
     color: var(--text-primary) !important;
     background-color: transparent !important;
 }
