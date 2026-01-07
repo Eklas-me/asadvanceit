@@ -114,42 +114,19 @@
                     <ul class="nav nav-collapse">
                         @php
                             $visibleSheets = \App\Http\Controllers\SheetsController::getVisibleSheets();
-                            $user = auth()->user();
-                            $iconMap = [
-                                'facebook' => 'fab fa-facebook',
-                                'morning_8_hours' => 'fas fa-sun',
-                                'morning_8_hours_female' => 'fas fa-female',
-                                'evening_8_hours' => 'fas fa-cloud-sun',
-                                'night_8_hours' => 'fas fa-moon',
-                                'day_12_hours' => 'fas fa-sun',
-                                'night_12_hours' => 'fas fa-moon',
-                            ];
                         @endphp
 
-                        @foreach($visibleSheets as $slug => $config)
-                            @php
-                                $hasAccess = false;
-                                if ($user->role === 'admin' || !empty($config['public'])) {
-                                    $hasAccess = true;
-                                } elseif (isset($config['shift']) && $user->shift === $config['shift']) {
-                                    $hasAccess = true;
-                                }
-                            @endphp
-
-                            @if($hasAccess)
-                                <li class="nav-item {{ request()->is('sheets/' . $slug) ? 'active' : '' }}">
-                                    <a href="{{ route('sheets.show', $slug) }}">
-                                        <i class="{{ $iconMap[$slug] ?? 'fas fa-file-excel' }}"></i>
-                                        <span class="sub-item">{{ $config['title'] }}</span>
-                                    </a>
-                                </li>
-                            @endif
-                        @endforeach
-
-                        @if($user->role !== 'admin' && empty($visibleSheets))
-                            <li><span class="sub-item text-danger" style="padding-left: 20px;">No sheets available!</span>
+                        @forelse($visibleSheets as $sheet)
+                            <li class="nav-item {{ request()->is('sheets/' . $sheet->slug) ? 'active' : '' }}">
+                                <a href="{{ route('sheets.show', $sheet->slug) }}">
+                                    <i class="{{ $sheet->icon ?? 'fas fa-file-excel' }}"></i>
+                                    <span class="sub-item">{{ $sheet->title }}</span>
+                                </a>
                             </li>
-                        @endif
+                        @empty
+                            <li><span class="sub-item text-muted" style="padding-left: 20px;">No sheets available!</span>
+                            </li>
+                        @endforelse
                     </ul>
                 </div>
             </li>

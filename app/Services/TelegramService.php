@@ -106,7 +106,13 @@ class TelegramService
         $url = "https://api.telegram.org/bot{$this->botToken}/sendPhoto";
 
         // Get absolute file path
-        $photoPath = public_path('uploads/' . $profilePhoto);
+        // Try storage path first (new system)
+        $photoPath = storage_path('app/public/' . $profilePhoto);
+
+        // Fallback to legacy path if not found in storage
+        if (!file_exists($photoPath) || !is_file($photoPath)) {
+            $photoPath = public_path('uploads/' . $profilePhoto);
+        }
 
         if (file_exists($photoPath) && is_file($photoPath)) {
             $response = Http::withoutVerifying()

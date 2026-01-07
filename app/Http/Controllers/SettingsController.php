@@ -129,31 +129,107 @@ class SettingsController extends Controller
     }
     public function updateSheetVisibility(Request $request)
     {
-        $inputSheets = $request->input('sheets', []);
+        // This method is now deprecated but kept for backwards compatibility
+        // New dynamic system uses GoogleSheet model directly
+        return back()->with('success', 'Sheet visibility updated successfully!');
+    }
 
-        // Define all known sheets to ensure we handle 'off' states (unchecked checkboxes)
-        $knownSheets = [
-            'facebook',
-            'morning_8_hours',
-            'morning_8_hours_female',
-            'evening_8_hours',
-            'night_8_hours',
-            'day_12_hours',
-            'night_12_hours',
-        ];
-
-        $visibilities = [];
-        foreach ($knownSheets as $key) {
-            $visibilities[$key] = isset($inputSheets[$key]) ? 'on' : 'off';
-        }
+    /**
+     * Store a new Google Sheet
+     */
+    public function storeSheet(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'url' => 'required|url',
+            'icon' => 'nullable|string|max:100',
+            'permission_type' => 'required|in:public,shift_based,admin_only',
+            'shift' => 'required_if:permission_type,shift_based|nullable|string',
+        ]);
 
         try {
-            // Store as a JSON string in site_settings
-            \App\Models\SiteSetting::set('sheet_visibility', json_encode($visibilities));
+            $slug = \App\Models\GoogleSheet::generateSlug($request->title);
 
-            return back()->with('success', 'Sheet visibility updated successfully!');
+            \App\Models\GoogleSheet::create([
+                'slug' => $slug,
+                'title' => $request->title,
+                'url' => $request->url,
+                'icon' => $request->icon ?: 'fas fa-file-excel',
+                'permission_type' => $request->permission_type,
+                'shift' => $request->permission_type === 'shift_based' ? $request->shift : null,
+                'is_visible' => true,
+                'order' => \App\Models\GoogleSheet::max('order') + 1,
+            ]);
+
+            return back()->with('success', 'Google Sheet added successfully!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to update settings: ' . $e->getMessage());
+            \Log::error('Failed to add sheet: ' . $e->getMessage());
+            return back()->with('error', 'Failed to add sheet: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update an existing Google Sheet
+     */
+    public function updateSheet(Request $request, $id)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'url' => 'required|url',
+            'icon' => 'nullable|string|max:100',
+            'permission_type' => 'required|in:public,shift_based,admin_only',
+            'shift' => 'required_if:permission_type,shift_based|nullable|string',
+        ]);
+
+        try {
+            $sheet = \App\Models\GoogleSheet::findOrFail($id);
+
+            $sheet->update([
+                'title' => $request->title,
+                'url' => $request->url,
+                'icon' => $request->icon ?: 'fas fa-file-excel',
+                'permission_type' => $request->permission_type,
+                'shift' => $request->permission_type === 'shift_based' ? $request->shift : null,
+            ]);
+
+            return back()->with('success', 'Google Sheet updated successfully!');
+        } catch (\Exception $e) {
+            \Log::error('Failed to update sheet: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update sheet: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a Google Sheet
+     */
+    public function deleteSheet($id)
+    {
+        try {
+            $sheet = \App\Models\GoogleSheet::findOrFail($id);
+            $sheet->delete();
+
+            return back()->with('success', 'Google Sheet deleted successfully!');
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete sheet: ' . $e->getMessage());
+            return back()->with('error', 'Failed to delete sheet: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Toggle visibility of a Google Sheet
+     */
+    public function toggleSheetVisibility($id)
+    {
+        try {
+            $sheet = \App\Models\GoogleSheet::findOrFail($id);
+            $sheet->update(['is_visible' => !$sheet->is_visible]);
+
+            $status = $sheet->is_visible ? 'visible' : 'hidden';
+            return back()->with('success', "Sheet is now {$status}!");
+        } catch (\Exception $e) {
+            \Log::error('Failed to toggle sheet: ' . $e->getMessage());
+            return back()->with('error', 'Failed to toggle sheet visibility.');
         }
     }
 }
+

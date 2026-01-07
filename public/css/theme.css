@@ -492,3 +492,71 @@ body {
         padding: 16px;
     }
 }
+
+/* ========== DARK MODE: BOOTSTRAP MODAL OVERRIDES ========== */
+[data-theme="dark"] .modal-content {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .modal-title {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ========== DARK MODE: BOOTSTRAP TABLE OVERRIDES ========== */
+[data-theme="dark"] .table {
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .table tr,
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td {
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover {
+    background-color: var(--hover-bg) !important;
+}
+
+[data-theme="dark"] .table thead {
+    background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .table thead th {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-secondary) !important;
+}
+
+/* ========== DARK MODE: BUTTON OUTLINES ========== */
+[data-theme="dark"] .btn-outline-primary {
+    color: var(--accent-blue) !important;
+    border-color: var(--accent-blue) !important;
+}
+
+[data-theme="dark"] .btn-outline-primary:hover {
+    background-color: var(--accent-blue) !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .btn-outline-danger {
+    color: #EF4444 !important;
+    border-color: #EF4444 !important;
+}
+
+[data-theme="dark"] .btn-outline-danger:hover {
+    background-color: #EF4444 !important;
+    color: white !important;
+}

@@ -73,6 +73,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/admin/settings/telegram', [App\Http\Controllers\SettingsController::class, 'updateTelegram'])->name('admin.settings.update_telegram');
         Route::post('/admin/settings/sheets', [App\Http\Controllers\SettingsController::class, 'updateSheetVisibility'])->name('admin.settings.update_sheets');
 
+        // Google Sheets CRUD Routes
+        Route::post('/admin/settings/sheets/store', [App\Http\Controllers\SettingsController::class, 'storeSheet'])->name('admin.settings.sheets.store');
+        Route::put('/admin/settings/sheets/{sheet}', [App\Http\Controllers\SettingsController::class, 'updateSheet'])->name('admin.settings.sheets.update');
+        Route::delete('/admin/settings/sheets/{sheet}', [App\Http\Controllers\SettingsController::class, 'deleteSheet'])->name('admin.settings.sheets.delete');
+        Route::post('/admin/settings/sheets/{sheet}/toggle', [App\Http\Controllers\SettingsController::class, 'toggleSheetVisibility'])->name('admin.settings.sheets.toggle');
+
         // Telegram Test Route
         Route::get('/admin/telegram/test', function () {
             $telegram = app(\App\Services\TelegramService::class);
