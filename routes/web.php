@@ -28,6 +28,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'login']);
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register']);
+
+    // Direct Password Reset Routes
+    Route::get('/recover-account', [App\Http\Controllers\Auth\DirectResetController::class, 'showEmailForm'])->name('password.request');
+    Route::post('/recover-account/verify', [App\Http\Controllers\Auth\DirectResetController::class, 'verifyEmail'])->name('password.verify');
+    Route::get('/recover-account/reset', [App\Http\Controllers\Auth\DirectResetController::class, 'showPasswordForm'])->name('password.reset.form');
+    Route::post('/recover-account/reset', [App\Http\Controllers\Auth\DirectResetController::class, 'resetPassword'])->name('password.update.direct');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');

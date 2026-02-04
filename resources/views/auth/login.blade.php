@@ -49,7 +49,7 @@
                 </button>
 
                 <div class="auth-footer">
-                    <a href="#" class="auth-link">Forgot Password?</a>
+                    <a href="{{ route('password.request') }}" class="auth-link">Forgot Password?</a>
                     <a href="{{ route('register') }}" class="auth-link">Create Account</a>
                 </div>
             </form>
