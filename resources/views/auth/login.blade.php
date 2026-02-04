@@ -29,30 +29,26 @@
                 </div>
             @endif
 
-            <form action="{{ route('login') }}" method="POST">
-                @csrf
-
-                <div class="aero-form-group">
-                    <input type="email" name="email" id="email" class="aero-input-floating" placeholder=" " required
-                        value="{{ old('email') }}">
-                    <label for="email" class="aero-label-floating">Email Address</label>
+            {{-- Agent-Only Login Notice --}}
+            <div class="text-center" style="padding: 2rem 0;">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">
+                    <i class="fas fa-desktop" style="color: var(--primary-color, #6366f1);"></i>
                 </div>
-
-                <div class="aero-form-group">
-                    <input type="password" name="password" id="password" class="aero-input-floating" placeholder=" "
-                        required>
-                    <label for="password" class="aero-label-floating">Password</label>
+                <h2 style="color: #fff; margin-bottom: 1rem;">Agent App Required</h2>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem; line-height: 1.6;">
+                    Direct login is not available.<br>
+                    Please use the <strong>Agent App</strong> installed on your PC to sign in.
+                </p>
+                <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 0;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        If you don't have the Agent App, please contact your administrator.
+                    </p>
                 </div>
-
-                <button type="submit" class="aero-btn-premium w-100">
-                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
-                </button>
-
-                <div class="auth-footer">
-                    <a href="{{ route('password.request') }}" class="auth-link">Forgot Password?</a>
-                    <a href="{{ route('register') }}" class="auth-link">Create Account</a>
-                </div>
-            </form>
+                <a href="{{ route('register') }}" class="auth-link" style="display: inline-block;">
+                    <i class="fas fa-user-plus me-2"></i>Create Account
+                </a>
+            </div>
         </div>
     </div>
 @endsection

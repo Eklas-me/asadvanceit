@@ -1,40 +1,33 @@
-# Logs
-*.log
+# Rust / Cargo
+/target/
+/admin-server/target/
+/agent-app/src-tauri/target/
+**/*.rs.bk
 
-# OS / IDE
+# Node / NPM
+/node_modules/
+/agent-app/node_modules/
+npm-debug.log
+
+# VS Code
+.vscode/
+
+# OS
 .DS_Store
 Thumbs.db
-/.idea
-/.vscode
-/.fleet
-/.zed
-/.nova
 
-# Environment
-.env*
-!.env.example
-/auth.json
-
-# PHP
-/vendor
-/.phpunit.cache
-.phpunit.result.cache
-.phpactor.json
-
-# Node
-/node_modules
-
-# Vite (important)
+# Laravel (Standard)
+/vendor/
+/node_modules/
 /public/hot
-
-# Public user uploads
 /public/storage
-/public/uploads
-
-# Storage
 /storage/*.key
-/storage/app/public
-
-# Homestead
-Homestead.json
-Homestead.yaml
+/storage/app/public/
+/storage/framework/cache/data/
+/storage/framework/sessions/
+/storage/framework/testing/
+/storage/framework/views/
+/storage/logs/
+.env
+.env.backup
+.phpunit.result.cache

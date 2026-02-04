@@ -21,6 +21,26 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Magic Login Token Consumer (Agent calls this URL to auto-login user)
+Route::get('/magic-login/{token}', function ($token) {
+    $magicToken = \App\Models\MagicLoginToken::where('token', $token)->first();
+
+    if (!$magicToken || !$magicToken->isValid()) {
+        return redirect()->route('login')->withErrors(['error' => 'Invalid or expired login link.']);
+    }
+
+    // Mark token as used
+    $magicToken->update(['used' => true]);
+
+    // Log user in
+    \Illuminate\Support\Facades\Auth::login($magicToken->user);
+
+    // Regenerate session
+    request()->session()->regenerate();
+
+    return redirect()->route('dashboard');
+})->name('magic.login');
+
 
 // Authentication Routes (Guest only - redirect if logged in)
 Route::middleware('guest')->group(function () {
