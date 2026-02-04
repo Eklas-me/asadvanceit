@@ -81,7 +81,7 @@
                                     <td>{{ $user->email }}</td>
                                     <td>{{ $user->phone }}</td>
                                     <td>{{ $user->shift }}</td>
-                                    <td>
+
                                     <td>
                                         @php
                                             $profilePhoto = $user->profile_photo;
