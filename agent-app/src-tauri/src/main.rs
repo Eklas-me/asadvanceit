@@ -2,10 +2,9 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use sysinfo::{System, Networks, Components, Disks}; // Updated for sysinfo 0.30
+use sysinfo::{System, SystemExt, CpuExt}; 
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{SinkExt, StreamExt};
 use url::Url;
@@ -119,7 +118,7 @@ async fn connect_and_monitor() {
                      if let Ok(image) = screen.capture() {
                          // Fix for screenshots 0.8 to image 0.24 conversion
                          // image.rgba() returns Vec<u8> which we can use directly
-                         if let Some(img) = image::RgbaImage::from_raw(image.width(), image.height(), image.rgba().clone()) {
+                         if let Some(img) = image::RgbaImage::from_raw(image.width(), image.height(), image.buffer().to_vec()) {
                              let dynamic_image = image::DynamicImage::ImageRgba8(img);
                              let mut buffer = Vec::new();
                              let mut cursor = Cursor::new(&mut buffer);
