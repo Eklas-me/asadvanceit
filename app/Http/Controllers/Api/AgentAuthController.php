@@ -16,6 +16,7 @@ class AgentAuthController extends Controller
      */
     public function login(Request $request)
     {
+        \Log::info('Agent login attempt', ['email' => $request->email]);
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',

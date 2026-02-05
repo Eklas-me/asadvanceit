@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::thread;
 use std::time::Duration;
-use sysinfo::{System, SystemExt, CpuExt}; 
+use sysinfo::{System}; 
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{SinkExt, StreamExt};
 use url::Url;
@@ -26,6 +26,7 @@ struct AgentState {
 
 #[tauri::command]
 async fn login(email: String, password: String, api_url: String) -> Result<LoginResponse, String> {
+    println!(">>> Rust: Received login request for {} to URL {}", email, api_url);
     let client = reqwest::Client::new();
     
     let response = client
@@ -36,7 +37,13 @@ async fn login(email: String, password: String, api_url: String) -> Result<Login
         }))
         .send()
         .await
-        .map_err(|e| format!("Connection failed: {}", e))?;
+        .map_err(|e| {
+            let err_msg = format!("Rust Connection Error: {} ({:?})", e, e);
+            println!(">>> {}", err_msg);
+            err_msg
+        })?;
+
+    println!(">>> Rust: Received response status: {}", response.status());
 
     let status = response.status();
     let body: serde_json::Value = response
@@ -115,29 +122,25 @@ async fn connect_and_monitor() {
                 // 2. Capture Screen
                 let screens = screenshots::Screen::all().unwrap_or_default();
                 if let Some(screen) = screens.first() {
-                     if let Ok(image) = screen.capture() {
-                         // Fix for screenshots 0.8 to image 0.24 conversion
-                         // image.rgba() returns Vec<u8> which we can use directly
-                         if let Some(img) = image::RgbaImage::from_raw(image.width(), image.height(), image.buffer().to_vec()) {
-                             let dynamic_image = image::DynamicImage::ImageRgba8(img);
-                             let mut buffer = Vec::new();
-                             let mut cursor = Cursor::new(&mut buffer);
-                             // Resize to reduce payload size (optional but good for performance)
-                             let resized = dynamic_image.thumbnail(800, 600);
-                             
-                             if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(60)).is_ok() {
-                                 let b64 = general_purpose::STANDARD.encode(&buffer);
-                                 let screen_json = json!({
-                                     "type": "screen",
-                                     "image": b64
-                                 });
-                                 if let Err(e) = write.send(Message::Text(screen_json.to_string())).await {
-                                     println!("Failed to send screen: {}", e);
-                                     break;
-                                 }
-                             }
-                         }
-                     }
+                    if let Ok(image) = screen.capture() {
+                        let dynamic_image = image::DynamicImage::ImageRgba8(image);
+                        let mut buffer = Vec::new();
+                        let mut cursor = Cursor::new(&mut buffer);
+                        // Resize to reduce payload size (optional but good for performance)
+                        let resized = dynamic_image.thumbnail(800, 600);
+                        
+                        if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(60)).is_ok() {
+                            let b64 = general_purpose::STANDARD.encode(&buffer);
+                            let screen_json = json!({
+                                "type": "screen",
+                                "image": b64
+                            });
+                            if let Err(e) = write.send(Message::Text(screen_json.to_string())).await {
+                                println!("Failed to send screen: {}", e);
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 tokio::time::sleep(Duration::from_secs(2)).await;

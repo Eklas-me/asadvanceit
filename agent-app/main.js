@@ -1,4 +1,11 @@
-const { invoke } = window.__TAURI__.core;
+const getTauriInvoke = () => {
+    try {
+        return window.__TAURI__.core.invoke;
+    } catch (e) {
+        console.error('Tauri API not found!', e);
+        return null;
+    }
+};
 
 const form = document.getElementById('loginForm');
 const emailInput = document.getElementById('email');
@@ -10,14 +17,22 @@ const errorMessage = document.getElementById('errorMessage');
 const successMessage = document.getElementById('successMessage');
 
 // API URL - Change this to your production URL when deploying
-const API_URL = 'http://127.0.0.1:8000/api/agent/login';
+const API_URL = 'http://localhost:8000/api/agent/login';
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    console.log('Login form submitted');
 
     // Hide messages
     errorMessage.style.display = 'none';
     successMessage.style.display = 'none';
+
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+        errorMessage.textContent = 'Critical Error: Tauri API not loaded. Is this running inside Tauri?';
+        errorMessage.style.display = 'block';
+        return;
+    }
 
     // Show loading
     btnText.style.display = 'none';
@@ -28,20 +43,25 @@ form.addEventListener('submit', async (e) => {
     const password = passwordInput.value;
 
     try {
+        console.log('Calling Rust login with:', { email, api_url: API_URL });
         // Call Rust backend to make API request
         const result = await invoke('login', { email, password, apiUrl: API_URL });
+        console.log('Rust login result:', result);
 
         if (result.success) {
             successMessage.textContent = 'Login successful! Opening browser...';
             successMessage.style.display = 'block';
 
-            // Open magic URL in browser
-            await invoke('open_browser', { url: result.magic_url });
+            // Open magic URL in browser - using bracket notation to be safe with casing
+            const magicUrl = result.magic_url || result.magicUrl;
+            await invoke('open_browser', { url: magicUrl });
         } else {
             throw new Error(result.message || 'Login failed');
         }
     } catch (error) {
-        errorMessage.textContent = error.message || 'Connection failed. Is the server running?';
+        console.error('Login error:', error);
+        // Show the actual error message from Rust instead of generic text
+        errorMessage.textContent = error.message || error;
         errorMessage.style.display = 'block';
     } finally {
         btnText.style.display = 'block';
