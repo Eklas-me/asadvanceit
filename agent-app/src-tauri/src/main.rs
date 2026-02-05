@@ -84,7 +84,7 @@ fn start_monitoring_background() {
 }
 
 async fn connect_and_monitor() {
-    let server_url = "ws://localhost:3001/ws"; // Configurable in future
+    let server_url = "ws://192.168.68.102:3001/ws"; // Configurable in future
     let url = Url::parse(server_url).expect("Invalid WebSocket URL");
 
     println!("Attempting to connect to {}", server_url);
