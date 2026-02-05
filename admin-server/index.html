@@ -4,241 +4,389 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced IT Monitor</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Advanced IT | Sentinel Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --accent: #6366f1;
+            --bg-dark: #020617;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.5);
+            --secondary: #22d3ee;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --danger: #f43f5e;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
         }
 
         body {
-            margin: 0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg-color);
-            color: var(--text-primary);
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(34, 211, 238, 0.1) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        .header {
-            padding: 20px;
-            background: var(--card-bg);
+        .navbar {
+            backdrop-filter: blur(16px);
+            background: var(--glass-bg);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #334155;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--accent);
+        .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #6366f1, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
+        .status-chip {
+            padding: 6px 16px;
+            border-radius: 100px;
             font-size: 0.85rem;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
         }
 
-        .connected {
-            background: rgba(74, 222, 128, 0.2);
-            color: #4ade80;
+        .status-chip.connected {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
         }
 
-        .disconnected {
-            background: rgba(248, 113, 113, 0.2);
-            color: #f87171;
+        .status-chip.disconnected {
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(244, 63, 94, 0.2);
         }
 
-        .dashboard {
-            padding: 30px;
+        .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% {
+                box-shadow: 0 0 0 0px rgba(16, 185, 129, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0px rgba(16, 185, 129, 0);
+            }
+        }
+
+        .main-container {
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .grid-header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .grid-title h1 {
+            font-size: 1.8rem;
+            margin-bottom: 4px;
+        }
+
+        .grid-title p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        .agent-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 24px;
         }
 
         .agent-card {
-            background: var(--card-bg);
-            border-radius: 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid #334155;
-            transition: transform 0.2s;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
         }
 
         .agent-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--accent);
+            transform: translateY(-8px) scale(1.01);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
         }
 
-        .screen-view {
+        .screen-container {
             width: 100%;
-            aspect-ratio: 16/9;
+            aspect-ratio: 16/10;
             background: #000;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
         }
 
-        .screen-img {
+        .screen-image {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
+            transition: opacity 0.5s ease;
         }
 
-        .no-signal {
-            color: #64748b;
-            font-size: 0.9rem;
+        .screen-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.8) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .no-signal-overlay {
+            position: absolute;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+            color: var(--text-dim);
+            z-index: 5;
         }
 
-        .card-body {
-            padding: 15px;
+        .no-signal-overlay i {
+            font-size: 2.5rem;
+            opacity: 0.5;
         }
 
-        .agent-header {
+        .card-details {
+            padding: 20px;
+        }
+
+        .agent-info {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
+            align-items: flex-start;
+            margin-bottom: 20px;
         }
 
-        .agent-name {
+        .agent-meta h3 {
+            font-size: 1.1rem;
             font-weight: 600;
-            color: #fff;
-        }
-
-        .agent-ip {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            font-size: 0.85rem;
-        }
-
-        .stat-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px;
-            border-radius: 6px;
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            display: block;
             margin-bottom: 4px;
         }
 
-        .stat-value {
-            font-weight: 600;
-            font-family: monospace;
+        .agent-meta span {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .stat-cpu {
-            color: #facc15;
+        .metrics-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
         }
 
-        .stat-ram {
-            color: #38bdf8;
+        .metric-card {
+            background: rgba(15, 23, 42, 0.4);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .controls {
-            margin-top: 15px;
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .metric-value-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .metric-unit {
+            font-size: 0.8rem;
+            opacity: 0.6;
+            margin-left: 2px;
+        }
+
+        .progress-track {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .cpu-fill {
+            background: linear-gradient(to right, #6366f1, #818cf8);
+        }
+
+        .ram-fill {
+            background: linear-gradient(to right, #22d3ee, #06b6d4);
+        }
+
+        .action-group {
             display: flex;
             gap: 10px;
         }
 
-        .btn {
+        .action-btn {
             flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8rem;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            font-size: 0.85rem;
             font-weight: 600;
-            transition: background 0.2s;
+            cursor: pointer;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
         }
 
-        .btn-shutdown {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
         }
 
-        .btn-shutdown:hover {
-            background: rgba(239, 68, 68, 0.3);
+        .action-btn.danger:hover {
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--danger);
+            border-color: var(--danger);
         }
 
-        .btn-message {
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
+        /* Responsive Mobile */
+        @media (max-width: 640px) {
+            .agent-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-container {
+                padding: 1rem;
+            }
         }
 
-        .btn-message:hover {
-            background: rgba(59, 130, 246, 0.3);
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 100px 20px;
+            grid-column: 1 / -1;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+            display: block;
         }
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <div class="logo">
-            <i class="fas fa-network-wired"></i> Advanced IT Monitor
+    <nav class="navbar">
+        <div class="brand">
+            <i class="fas fa-shield-halved"></i>
+            SENTINEL MONITOR
         </div>
-        <div id="connStatus" class="status-badge disconnected">
-            <i class="fas fa-wifi"></i> Disconnected
+        <div id="connStatus" class="status-chip disconnected">
+            <div class="pulse"></div>
+            <span>OFFLINE</span>
         </div>
-    </div>
+    </nav>
 
-    <div id="dashboard" class="dashboard">
-        <!-- Agent cards will appear here -->
-        <div class="agent-card">
-            <div class="screen-view">
-                <div class="no-signal">
-                    <i class="fas fa-video-slash fa-2x"></i>
-                    <span>Waiting for agents...</span>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="agent-header">
-                    <div>
-                        <div class="agent-name">Worker PC (Waiting)</div>
-                        <div class="agent-ip">---</div>
-                    </div>
-                    <div class="status-dot online"></div>
-                </div>
+    <main class="main-container">
+        <div class="grid-header">
+            <div class="grid-title">
+                <h1>Active Nodes</h1>
+                <p id="node-count">0 agents connected in real-time</p>
             </div>
         </div>
-    </div>
+
+        <div id="dashboard" class="agent-grid">
+            <div class="empty-state">
+                <i class="fas fa-satellite-dish fa-spin"></i>
+                <h2 style="color: var(--text-dim);">Scanning for agents...</h2>
+                <p style="color: var(--text-dim); margin-top: 10px;">The sentinel is ready to receive data.</p>
+            </div>
+        </div>
+    </main>
 
     <script>
         const ws = new WebSocket(`ws://${location.host}/ws`);
         const connStatus = document.getElementById('connStatus');
         const dashboard = document.getElementById('dashboard');
+        const nodeCountText = document.getElementById('node-count');
 
-        // Store agent data: ID -> { stats, lastUpdate, element }
         const agents = {};
 
         ws.onopen = () => {
-            connStatus.textContent = 'Connected';
-            connStatus.className = 'status-badge connected';
-            connStatus.innerHTML = '<i class="fas fa-check-circle"></i> Connected';
+            connStatus.className = 'status-chip connected';
+            connStatus.innerHTML = '<div class="pulse"></div><span>MONITOR ACTIVE</span>';
         };
 
         ws.onmessage = (event) => {
@@ -246,95 +394,130 @@
                 const data = JSON.parse(event.data);
                 handleAgentData(data);
             } catch (e) {
-                console.error("Invalid JSON:", event.data);
+                console.error("Malformed package:", e);
             }
         };
 
         ws.onclose = () => {
-            connStatus.textContent = 'Disconnected';
-            connStatus.className = 'status-badge disconnected';
-            connStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Disconnected';
+            connStatus.className = 'status-chip disconnected';
+            connStatus.innerHTML = '<i class="fas fa-circle-exclamation"></i><span>DISCONNECTED</span>';
         };
 
         function handleAgentData(data) {
-            // For this demo, we assume single agent or identify by implicit session
-            // Since we didn't add ID to Agent code yet, let's treat all data as "Agent-1" for now
-            // To support multiple, we'd need to add ID to the Agent payload
-            const agentId = "Agent-1";
+            // For identity, we'll use "Agent-1" for now or extract from metadata if we added it
+            const agentId = "Sentinel-Node-01";
 
             if (!agents[agentId]) {
                 createAgentCard(agentId);
             }
 
-            const card = agents[agentId].element;
+            const agent = agents[agentId];
 
             if (data.type === 'stats') {
-                updateStats(card, data);
+                updateStats(agent.element, data);
             } else if (data.type === 'screen') {
-                updateScreen(card, data.image);
+                updateScreen(agent.element, data.image);
             }
         }
 
         function createAgentCard(id) {
-            // Remove placeholder if exists
-            const placeholder = document.querySelector('.agent-card .no-signal');
-            if (placeholder && document.querySelectorAll('.agent-card').length === 1) {
-                document.getElementById('dashboard').innerHTML = ''; // Clear placeholder
+            // Clear empty state if this is the first agent
+            if (Object.keys(agents).length === 0) {
+                dashboard.innerHTML = '';
             }
 
             const div = document.createElement('div');
             div.className = 'agent-card';
             div.id = `agent-${id}`;
             div.innerHTML = `
-                <div class="screen-view">
-                    <img class="screen-img" src="" alt="Live Feed" style="display:none;">
-                    <div class="no-signal">
-                        <i class="fas fa-spinner fa-spin"></i> Loading stream...
+                <div class="screen-container">
+                    <img class="screen-image" src="" alt="Viewstream" style="opacity:0;">
+                    <div class="screen-overlay"></div>
+                    <div class="no-signal-overlay">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Syncing Stream...</span>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="agent-header">
-                        <div>
-                            <div class="agent-name">${id}</div>
-                            <div class="agent-ip">Active</div>
+                <div class="card-details">
+                    <div class="agent-info">
+                        <div class="agent-meta">
+                            <h3>${id}</h3>
+                            <span><i class="fas fa-location-dot"></i> Live • Workforce</span>
                         </div>
-                        <i class="fas fa-circle" style="color: #4ade80; font-size: 0.6rem;"></i>
-                    </div>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <span class="stat-label"><i class="fas fa-microchip"></i> CPU</span>
-                            <span class="stat-value stat-cpu">0%</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label"><i class="fas fa-memory"></i> RAM</span>
-                            <span class="stat-value stat-ram">0 GB</span>
+                        <div class="status-chip connected" style="padding: 4px 10px; font-size: 0.75rem;">
+                            <div class="pulse" style="width:6px; height:6px;"></div>
+                            ACTIVE
                         </div>
                     </div>
-                    <div class="controls">
-                        <button class="btn btn-message"><i class="fas fa-envelope"></i> Message</button>
-                        <button class="btn btn-shutdown"><i class="fas fa-power-off"></i> Off</button>
+                    
+                    <div class="metrics-bar">
+                        <div class="metric-card">
+                            <div class="metric-label">
+                                <i class="fas fa-microchip"></i> Processor
+                            </div>
+                            <div class="metric-value-container">
+                                <span class="metric-value cpu-val">0</span>
+                                <span class="metric-unit">%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill cpu-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">
+                                <i class="fas fa-memory"></i> Memory
+                            </div>
+                            <div class="metric-value-container">
+                                <span class="metric-value ram-val">0.0</span>
+                                <span class="metric-unit">GB</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill ram-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-group">
+                        <button class="action-btn"><i class="fas fa-terminal"></i> Command</button>
+                        <button class="action-btn danger"><i class="fas fa-power-off"></i> Terminate</button>
                     </div>
                 </div>
             `;
             dashboard.appendChild(div);
             agents[id] = { element: div };
+
+            updateNodeCount();
         }
 
-        function updateStats(card, data) {
-            card.querySelector('.stat-cpu').textContent = data.cpu.toFixed(1) + '%';
+        function updateStats(element, data) {
+            const cpuVal = element.querySelector('.cpu-val');
+            const cpuFill = element.querySelector('.cpu-fill');
+            const ramVal = element.querySelector('.ram-val');
+            const ramFill = element.querySelector('.ram-fill');
 
-            const usedGB = (data.ram_used / 1024 / 1024 / 1024).toFixed(1);
-            const totalGB = (data.ram_total / 1024 / 1024 / 1024).toFixed(1);
-            card.querySelector('.stat-ram').textContent = `${usedGB}/${totalGB} GB`;
+            cpuVal.textContent = data.cpu.toFixed(1);
+            cpuFill.style.width = `${Math.min(100, data.cpu)}%`;
+
+            const usedGB = (data.ram_used / 1024 / 1024 / 1024);
+            const totalGB = (data.ram_total / 1024 / 1024 / 1024);
+            const ramPercent = (usedGB / totalGB) * 100;
+
+            ramVal.textContent = usedGB.toFixed(1);
+            ramFill.style.width = `${Math.min(100, ramPercent)}%`;
         }
 
-        function updateScreen(card, base64) {
-            const img = card.querySelector('.screen-img');
-            const noSignal = card.querySelector('.no-signal');
+        function updateScreen(element, base64) {
+            const img = element.querySelector('.screen-image');
+            const overlay = element.querySelector('.no-signal-overlay');
 
             img.src = `data:image/jpeg;base64,${base64}`;
-            img.style.display = 'block';
-            if (noSignal) noSignal.style.display = 'none';
+            img.style.opacity = '1';
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        function updateNodeCount() {
+            const count = Object.keys(agents).length;
+            nodeCountText.textContent = `${count} active node${count !== 1 ? 's' : ''} monitored securely`;
         }
     </script>
 </body>
