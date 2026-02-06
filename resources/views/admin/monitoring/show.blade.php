@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.dashboard')
 
 @push('styles')
     <style>
@@ -7,14 +7,15 @@
             max-width: 1000px;
             margin: 0 auto;
             background: #000;
-            border: 2px solid #333;
-            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
             overflow: hidden;
             aspect-ratio: 16/9;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
 
         #stream-image {
@@ -24,37 +25,42 @@
         }
 
         .stats-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 1rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
             margin-top: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
 
         .stat-label {
             font-size: 0.8rem;
-            color: #aaa;
+            color: var(--text-muted);
             text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
         }
 
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             font-weight: bold;
-            color: #fff;
+            color: var(--text-primary);
         }
 
         .live-indicator {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.6);
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
             color: #ef4444;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 6px;
             font-size: 0.8rem;
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            backdrop-filter: blur(4px);
         }
 
         .dot {
@@ -74,46 +80,54 @@
 @endpush
 
 @section('content')
-    <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="text-white">Monitoring: {{ $user->name }}</h2>
-            <a href="{{ route('admin.monitoring.index') }}" class="btn btn-secondary">Back to List</a>
+    <div class="page-header fade-in">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title">Monitoring: {{ $user->name }}</h1>
+                <p class="text-muted mb-0">{{ $user->email }}</p>
+            </div>
+            <a href="{{ route('admin.monitoring.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to List
+            </a>
         </div>
+    </div>
 
-        <div class="monitor-screen">
-            <div class="live-indicator">
-                <span class="dot"></span> LIVE
-            </div>
-            <img id="stream-image" src="" alt="Waiting for stream...">
-            <div id="loading-text" class="text-white position-absolute">Waiting for agent connection...</div>
+    <div class="monitor-screen fade-in">
+        <div class="live-indicator">
+            <span class="dot"></span> LIVE
         </div>
+        <img id="stream-image" src="" alt="Waiting for stream...">
+        <div id="loading-text" class="text-muted position-absolute">
+            <i class="fas fa-spinner fa-spin me-2"></i> Waiting for agent connection...
+        </div>
+    </div>
 
-        <div class="row mt-4">
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <div class="stat-label">CPU Usage</div>
-                    <div class="stat-value" id="cpu-val">0%</div>
-                    <div class="progress mt-2" style="height: 6px; background: rgba(255,255,255,0.1);">
-                        <div id="cpu-bar" class="progress-bar bg-primary" style="width: 0%"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <div class="stat-label">RAM Usage</div>
-                    <div class="stat-value" id="ram-val">0 GB</div>
-                    <div class="progress mt-2" style="height: 6px; background: rgba(255,255,255,0.1);">
-                        <div id="ram-bar" class="progress-bar bg-success" style="width: 0%"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <div class="stat-label">Last Updated</div>
-                    <div class="stat-value" id="last-update">-</div>
+    <div class="row mt-4 fade-in" style="animation-delay: 0.2s;">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <div class="stat-label">CPU Usage</div>
+                <div class="stat-value" id="cpu-val">0%</div>
+                <div class="progress mt-2" style="height: 6px; background: rgba(255,255,255,0.1);">
+                    <div id="cpu-bar" class="progress-bar bg-primary" style="width: 0%"></div>
                 </div>
             </div>
         </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <div class="stat-label">RAM Usage</div>
+                <div class="stat-value" id="ram-val">0 GB</div>
+                <div class="progress mt-2" style="height: 6px; background: rgba(255,255,255,0.1);">
+                    <div id="ram-bar" class="progress-bar bg-success" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <div class="stat-label">Last Updated</div>
+                <div class="stat-value" id="last-update">-</div>
+            </div>
+        </div>
+    </div>
     </div>
 @endsection
 
