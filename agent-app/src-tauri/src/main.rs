@@ -1,13 +1,12 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
+use tauri::Manager;
+use image::ImageOutputFormat;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::io::Cursor;
 use std::thread;
 use std::time::Duration;
-use sysinfo::{System}; 
+use sysinfo::System;
 use url::Url;
-use std::io::Cursor;
-use image::ImageOutputFormat;
 use base64::{Engine as _, engine::general_purpose};
 
 #[derive(Serialize, Deserialize)]
@@ -16,6 +15,18 @@ struct LoginResponse {
     message: String,
     magic_url: Option<String>,
     access_token: Option<String>,
+}
+
+#[tauri::command]
+fn get_hwid() -> String {
+    machine_uid::get().unwrap_or_else(|_| "unknown_hwid".to_string())
+}
+
+#[tauri::command]
+fn get_computer_name() -> String {
+    hostname::get()
+        .map(|h| h.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| "Unknown PC".to_string())
 }
 
 #[tauri::command]
@@ -54,7 +65,8 @@ async fn login(email: String, password: String, api_url: String) -> Result<Login
             // Determine stream URL from login URL (replace /login with /stream)
             // Assuming api_url ends with /api/agent/login
             let stream_url = api_url.replace("/login", "/stream");
-            start_monitoring_background(stream_url, token);
+            let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
+            start_monitoring_background(stream_url, token, hwid);
         }
 
         Ok(LoginResponse {
@@ -78,7 +90,7 @@ async fn open_browser(url: String) -> Result<(), String> {
     open::that(&url).map_err(|e| format!("Failed to open browser: {}", e))
 }
 
-fn start_monitoring_background(stream_url: String, token: String) {
+fn start_monitoring_background(stream_url: String, token: String, hardware_id: String) {
     thread::spawn(move || {
         println!(">>> Starting monitoring loop to {}", stream_url);
         let client = reqwest::blocking::Client::new();
@@ -119,7 +131,8 @@ fn start_monitoring_background(stream_url: String, token: String) {
             if !image_b64.is_empty() {
                 let payload = json!({
                     "image": image_b64,
-                    "stats": stats
+                    "stats": stats,
+                    "hardware_id": hardware_id
                 });
 
                 let res = client.post(&stream_url)
@@ -140,7 +153,19 @@ fn start_monitoring_background(stream_url: String, token: String) {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![login, open_browser])
+        .invoke_handler(tauri::generate_handler![
+            login,
+            open_browser,
+            get_hwid,
+            get_computer_name
+        ])
+        .on_window_event(|event| match event.event() {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                event.window().hide().unwrap();
+                api.prevent_close();
+            }
+            _ => {}
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

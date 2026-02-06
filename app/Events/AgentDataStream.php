@@ -15,16 +15,16 @@ class AgentDataStream implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $userId;
+    public $channelId;
     public $screenImage; // Base64 encoded image
     public $stats;       // CPU, RAM, etc.
 
     /**
      * Create a new event instance.
      */
-    public function __construct($userId, $screenImage, $stats)
+    public function __construct($channelId, $screenImage, $stats)
     {
-        $this->userId = $userId;
+        $this->channelId = $channelId;
         $this->screenImage = $screenImage;
         $this->stats = $stats;
     }
@@ -37,7 +37,7 @@ class AgentDataStream implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('agent-stream.' . $this->userId),
+            new PrivateChannel('agent-monitor.' . $this->channelId),
         ];
     }
 

@@ -1,184 +1,172 @@
 @extends('layouts.dashboard')
 
 @push('styles')
-    <style>
-        .monitor-screen {
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
-            background: #000;
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-            aspect-ratio: 16/9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        #stream-image {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .stats-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--text-primary);
-        }
-
-        .live-indicator {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #ef4444;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(4px);
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            background-color: #ef4444;
-            border-radius: 50%;
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-            50% {
-                opacity: 0.5;
-            }
-        }
-    </style>
+<style>
+    .glass-player-container {
+        background: rgba(20, 20, 30, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 30px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        position: relative;
+        overflow: hidden;
+        margin-top: 1rem;
+    }
+    .player-header {
+        padding: 25px 35px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .stream-wrapper {
+        position: relative;
+        background: #000;
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stats-tray {
+        padding: 25px 35px;
+        background: rgba(255, 255, 255, 0.02);
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+    .stat-item {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 15px 25px;
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        flex: 1;
+        min-width: 150px;
+    }
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    .stat-label {
+        color: #888;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(220, 53, 69, 0.1);
+        padding: 6px 12px;
+        border-radius: 20px;
+        color: #dc3545;
+        font-weight: 700;
+        font-size: 0.75rem;
+    }
+    .live-dot {
+        width: 8px;
+        height: 8px;
+        background: #dc3545;
+        border-radius: 50%;
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.5); opacity: 0.5; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .premium-title {
+        font-weight: 800;
+        background: linear-gradient(to right, #fff, #999);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+</style>
 @endpush
 
 @section('content')
-    <div class="page-header fade-in">
-        <div class="d-flex justify-content-between align-items-center">
+    <div class="glass-player-container fade-in">
+        <div class="player-header">
             <div>
-                <h1 class="page-title">Monitoring: {{ $user->name }}</h1>
-                <p class="text-muted mb-0">{{ $user->email }}</p>
+                <h2 class="premium-title mb-0">
+                    {{ $device->user ? $device->user->name : $device->computer_name }}
+                </h2>
+                <p class="text-muted small mb-0">
+                    @if($device->user)
+                        <i class="fas fa-user-circle me-1"></i> {{ $device->user->email }}
+                    @else
+                        <i class="fas fa-desktop me-1"></i> {{ $device->computer_name }} (Agent Service)
+                    @endif
+                </p>
             </div>
-            <a href="{{ route('admin.monitoring.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-2"></i> Back to List
-            </a>
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                LIVE MONITORING
+            </div>
         </div>
-    </div>
 
-    <div class="monitor-screen fade-in">
-        <div class="live-indicator">
-            <span class="dot"></span> LIVE
+        <div class="stream-wrapper">
+            <img id="stream-image" src="" alt="Live Stream" class="img-fluid" style="display: none; width: 100%;">
+            <div id="loading-text" class="text-center p-5">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="text-muted">Waiting for agent to broadcast screen...</p>
+            </div>
         </div>
-        <img id="stream-image" src="" alt="Waiting for stream...">
-        <div id="loading-text" class="text-muted position-absolute">
-            <i class="fas fa-spinner fa-spin me-2"></i> Waiting for agent connection...
-        </div>
-    </div>
 
-    <div class="row mt-4 fade-in" style="animation-delay: 0.2s;">
-        <div class="col-md-4">
-            <div class="stats-card">
+        <div class="stats-tray">
+            <div class="stat-item">
                 <div class="stat-label">CPU Usage</div>
-                <div class="stat-value" id="cpu-val">0%</div>
-                <div class="progress mt-2" style="height: 6px; background: rgba(255,255,255,0.1);">
-                    <div id="cpu-bar" class="progress-bar bg-primary" style="width: 0%"></div>
-                </div>
+                <div class="stat-value" id="cpu-stat">--%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Memory</div>
+                <div class="stat-value" id="ram-stat">-- GB</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Hardware ID</div>
+                <div class="stat-value" style="font-size: 0.85rem; font-family: monospace; color: #aaa;">{{ $device->hardware_id }}</div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="stats-card">
-                <div class="stat-label">RAM Usage</div>
-                <div class="stat-value" id="ram-val">0 GB</div>
-                <div class="progress mt-2" style="height: 6px; background: rgba(255,255,255,0.1);">
-                    <div id="ram-bar" class="progress-bar bg-success" style="width: 0%"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stats-card">
-                <div class="stat-label">Last Updated</div>
-                <div class="stat-value" id="last-update">-</div>
-            </div>
-        </div>
-    </div>
     </div>
 @endsection
 
 @push('scripts')
     <script type="module">
-        const userId = {{ $user->id }};
-        const imgEl = document.getElementById('stream-image');
-        const loadingEl = document.getElementById('loading-text');
+        const channelId = "{{ $device->user ? 'user.' . $device->user->id : 'device.' . $device->hardware_id }}";
 
-        // Wait for Echo to be initialized
-        const initEcho = setInterval(() => {
-            if (window.Echo) {
-                clearInterval(initEcho);
-                console.log('Echo initialized, subscribing to channel...');
+        document.addEventListener('DOMContentLoaded', () => {
+            const imgEl = document.getElementById('stream-image');
+            const loadingEl = document.getElementById('loading-text');
 
-                // Debug connection
-                window.Echo.connector.pusher.connection.bind('connected', () => {
-                    console.log('Successfully connected to Reverb!');
-                });
+            const initEcho = setInterval(() => {
+                if (window.Echo) {
+                    clearInterval(initEcho);
+                    console.log('Echo initialized. Subscribing to: ' + channelId);
 
-                window.Echo.connector.pusher.connection.bind('error', (err) => {
-                    console.error('Reverb connection error:', err);
-                });
+                    window.Echo.private(`agent-monitor.${channelId}`)
+                        .listen('.agent.data', (e) => {
+                            console.log('Data received');
+                            
+                            if (e.screenImage) {
+                                imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
+                                imgEl.style.display = 'block';
+                                loadingEl.style.display = 'none';
+                            }
 
-                window.Echo.private(`agent-stream.${userId}`)
-                    .listen('.agent.data', (e) => {
-                        console.log('Data received');
-
-                    // Update image
-                    if (e.screenImage) {
-                        imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
-                        loadingEl.style.display = 'none';
-                    }
-
-                    // Update stats
-                    if (e.stats) {
-                        document.getElementById('cpu-val').innerText = Math.round(e.stats.cpu) + '%';
-                        document.getElementById('cpu-bar').style.width = e.stats.cpu + '%';
-
-                        const ramUsed = (e.stats.ram_used / 1024 / 1024 / 1024).toFixed(2);
-                        const ramTotal = (e.stats.ram_total / 1024 / 1024 / 1024).toFixed(2);
-                        document.getElementById('ram-val').innerText = `${ramUsed} / ${ramTotal} GB`;
-
-                        const ramPercent = (e.stats.ram_used / e.stats.ram_total) * 100;
-                        document.getElementById('ram-bar').style.width = ramPercent + '%';
-
-                        const now = new Date();
-                        document.getElementById('last-update').innerText = now.toLocaleTimeString();
-                    }
-                });
-            }
-        }, 100);
+                            if (e.stats) {
+                                if (e.stats.cpu !== undefined) {
+                                    document.getElementById('cpu-stat').textContent = Math.round(e.stats.cpu) + '%';
+                                }
+                                if (e.stats.ram_used !== undefined && e.stats.ram_total !== undefined) {
+                                    const usedGb = (e.stats.ram_used / (1024 * 1024 * 1024)).toFixed(1);
+                                    const totalGb = (e.stats.ram_total / (1024 * 1024 * 1024)).toFixed(1);
+                                    document.getElementById('ram-stat').textContent = `${usedGb} / ${totalGb} GB`;
+                                }
+                            }
+                        });
+                }
+            }, 500);
+        });
     </script>
 @endpush

@@ -17,7 +17,46 @@ const errorMessage = document.getElementById('errorMessage');
 const successMessage = document.getElementById('successMessage');
 
 // API URL - Change this to your production URL when deploying
-const API_URL = 'https://test.asadvanceit.com/api/agent/login';
+const BASE_URL = 'https://test.asadvanceit.com';
+const API_URL = `${BASE_URL}/api/agent/login`;
+
+// Heartbeat system
+let hardwareId = null;
+let computerName = null;
+
+async function startHeartbeat() {
+    const invoke = getTauriInvoke();
+    if (!invoke) return;
+
+    try {
+        // Fetch HWID and PC Name from Rust
+        hardwareId = await invoke('get_hwid');
+        computerName = await invoke('get_computer_name');
+
+        // Initial and Interval heartbeat
+        const sendHeartbeat = async () => {
+            try {
+                await fetch(`${BASE_URL}/api/agent/heartbeat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        hardware_id: hardwareId,
+                        computer_name: computerName
+                    })
+                });
+            } catch (e) {
+                console.error('Heartbeat failed', e);
+            }
+        };
+
+        sendHeartbeat();
+        setInterval(sendHeartbeat, 30000); // 30 seconds
+    } catch (e) {
+        console.error('Failed to get device info', e);
+    }
+}
+
+startHeartbeat();
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();

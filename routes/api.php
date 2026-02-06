@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\MonitoringController;
 */
 
 Route::post('/agent/login', [AgentAuthController::class, 'login']);
+Route::post('/agent/heartbeat', [\App\Http\Controllers\Api\MonitoringController::class, 'heartbeat']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/agent/stream', [MonitoringController::class, 'uploadStream']);
