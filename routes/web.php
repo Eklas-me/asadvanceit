@@ -120,6 +120,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin/notifications/create', [App\Http\Controllers\NotificationController::class, 'create'])->name('admin.notifications.create');
         Route::post('/admin/notifications', [App\Http\Controllers\NotificationController::class, 'store'])->name('admin.notifications.store');
         Route::delete('/admin/notifications/{notification}', [App\Http\Controllers\NotificationController::class, 'destroy'])->name('admin.notifications.destroy');
+
+        // Monitoring Routes
+        Route::get('/admin/monitoring', [App\Http\Controllers\Admin\MonitoringController::class, 'index'])->name('admin.monitoring.index');
+        Route::get('/admin/monitoring/{id}', [App\Http\Controllers\Admin\MonitoringController::class, 'show'])->name('admin.monitoring.show');
     });
 
     // User Specific Routes

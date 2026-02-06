@@ -5,8 +5,6 @@ use serde_json::json;
 use std::thread;
 use std::time::Duration;
 use sysinfo::{System}; 
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-use futures_util::{SinkExt, StreamExt};
 use url::Url;
 use std::io::Cursor;
 use image::ImageOutputFormat;
@@ -17,11 +15,7 @@ struct LoginResponse {
     success: bool,
     message: String,
     magic_url: Option<String>,
-}
-
-// Global state to control monitoring
-struct AgentState {
-    monitoring_active: bool,
+    access_token: Option<String>,
 }
 
 #[tauri::command]
@@ -52,19 +46,29 @@ async fn login(email: String, password: String, api_url: String) -> Result<Login
         .map_err(|e| format!("Invalid response: {}", e))?;
 
     if status.is_success() && body["success"].as_bool().unwrap_or(false) {
-        // Start monitoring in background upon successful login
-        start_monitoring_background();
+        let magic_url = body["magic_url"].as_str().map(|s| s.to_string());
+        let access_token = body["access_token"].as_str().map(|s| s.to_string());
+        
+        // Start monitoring in background if we have a token
+        if let Some(token) = access_token.clone() {
+            // Determine stream URL from login URL (replace /login with /stream)
+            // Assuming api_url ends with /api/agent/login
+            let stream_url = api_url.replace("/login", "/stream");
+            start_monitoring_background(stream_url, token);
+        }
 
         Ok(LoginResponse {
             success: true,
             message: body["message"].as_str().unwrap_or("Success").to_string(),
-            magic_url: body["magic_url"].as_str().map(|s| s.to_string()),
+            magic_url,
+            access_token,
         })
     } else {
         Ok(LoginResponse {
             success: false,
             message: body["message"].as_str().unwrap_or("Login failed").to_string(),
             magic_url: None,
+            access_token: None,
         })
     }
 }
@@ -74,83 +78,64 @@ async fn open_browser(url: String) -> Result<(), String> {
     open::that(&url).map_err(|e| format!("Failed to open browser: {}", e))
 }
 
-fn start_monitoring_background() {
-    thread::spawn(|| {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(async {
-            connect_and_monitor().await;
-        });
-    });
-}
-
-async fn connect_and_monitor() {
-    let server_url = "ws://192.168.68.102:3001/ws"; // Configurable in future
-    let url = Url::parse(server_url).expect("Invalid WebSocket URL");
-
-    println!("Attempting to connect to {}", server_url);
-
-    match connect_async(url).await {
-        Ok((ws_stream, _)) => {
-            println!("Connected to Admin Server!");
-            let (mut write, mut _read) = ws_stream.split();
-
-            // Stats collecting
-            let mut sys = System::new_all();
+fn start_monitoring_background(stream_url: String, token: String) {
+    thread::spawn(move || {
+        println!(">>> Starting monitoring loop to {}", stream_url);
+        let client = reqwest::blocking::Client::new();
+        let mut sys = System::new_all();
+        
+        loop {
+            // 1. Collect Stats
+            sys.refresh_cpu();
+            sys.refresh_memory();
             
-            // Loop for sending data
-            loop {
-                // 1. Collect Stats
-                sys.refresh_cpu();
-                sys.refresh_memory();
-                
-                let cpu_usage = sys.global_cpu_info().cpu_usage();
-                let ram_used = sys.used_memory();
-                let ram_total = sys.total_memory();
-                
-                let stats_json = json!({
-                    "type": "stats",
-                    "cpu": cpu_usage,
-                    "ram_used": ram_used,
-                    "ram_total": ram_total
-                });
+            let cpu_usage = sys.global_cpu_info().cpu_usage();
+            let ram_used = sys.used_memory();
+            let ram_total = sys.total_memory();
+            
+            let stats = json!({
+                "cpu": cpu_usage,
+                "ram_used": ram_used,
+                "ram_total": ram_total
+            });
 
-                if let Err(e) = write.send(Message::Text(stats_json.to_string())).await {
-                    println!("Failed to send stats: {}", e);
-                    break;
-                }
-
-                // 2. Capture Screen
-                let screens = screenshots::Screen::all().unwrap_or_default();
-                if let Some(screen) = screens.first() {
-                    if let Ok(image) = screen.capture() {
-                        let dynamic_image = image::DynamicImage::ImageRgba8(image);
-                        let mut buffer = Vec::new();
-                        let mut cursor = Cursor::new(&mut buffer);
-                        // Resize to reduce payload size (optional but good for performance)
-                        let resized = dynamic_image.thumbnail(800, 600);
-                        
-                        if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(60)).is_ok() {
-                            let b64 = general_purpose::STANDARD.encode(&buffer);
-                            let screen_json = json!({
-                                "type": "screen",
-                                "image": b64
-                            });
-                            if let Err(e) = write.send(Message::Text(screen_json.to_string())).await {
-                                println!("Failed to send screen: {}", e);
-                                break;
-                            }
-                        }
+            // 2. Capture Screen
+            let mut image_b64 = String::new();
+            let screens = screenshots::Screen::all().unwrap_or_default();
+            if let Some(screen) = screens.first() {
+                if let Ok(image) = screen.capture() {
+                    let dynamic_image = image::DynamicImage::ImageRgba8(image);
+                    let mut buffer = Vec::new();
+                    let mut cursor = Cursor::new(&mut buffer);
+                    // Resize to thumbnail size for faster transmission
+                    let resized = dynamic_image.thumbnail(800, 600);
+                    
+                    if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(60)).is_ok() {
+                        image_b64 = general_purpose::STANDARD.encode(&buffer);
                     }
                 }
-
-                tokio::time::sleep(Duration::from_secs(2)).await;
             }
+
+            if !image_b64.is_empty() {
+                let payload = json!({
+                    "image": image_b64,
+                    "stats": stats
+                });
+
+                let res = client.post(&stream_url)
+                    .header("Authorization", format!("Bearer {}", token))
+                    .json(&payload)
+                    .send();
+
+                if let Err(e) = res {
+                    println!(">>> Stream Upload Error: {}", e);
+                }
+            }
+
+            // Adjust FPS (e.g., 2 FPS = 500ms, 1 FPS = 1000ms)
+            thread::sleep(Duration::from_millis(1000));
         }
-        Err(e) => {
-            println!("WebSocket connection failed: {}. Retrying in 5s...", e);
-            tokio::time::sleep(Duration::from_secs(5)).await;
-        }
-    }
+    });
 }
 
 fn main() {

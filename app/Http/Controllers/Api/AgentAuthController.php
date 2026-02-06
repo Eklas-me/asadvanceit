@@ -69,10 +69,14 @@ class AgentAuthController extends Controller
         // Return magic link URL
         $magicUrl = url('/magic-login/' . $token);
 
+        // Generate Sanctum API Token for the Agent
+        $apiToken = $user->createToken('agent-app')->plainTextToken;
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful.',
             'magic_url' => $magicUrl,
+            'access_token' => $apiToken,
             'user' => [
                 'name' => $user->name,
                 'email' => $user->email,

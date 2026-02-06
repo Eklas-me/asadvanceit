@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AgentAuthController;
+use App\Http\Controllers\Api\MonitoringController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,3 +14,7 @@ use App\Http\Controllers\Api\AgentAuthController;
 */
 
 Route::post('/agent/login', [AgentAuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/agent/stream', [MonitoringController::class, 'uploadStream']);
+});

@@ -1,0 +1,158 @@
+Running 2.9.5 (2026-01-29 11:40:53) with PHP 8.5.2 on Windows NT / 10.0
+Reading ./composer.json (F:\Xampp\htdocs\asadvanceit\composer.json)
+Loading config file ./composer.json (F:\Xampp\htdocs\asadvanceit\composer.json)
+Checked CA file /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem does not exist or it is not a file.
+Checked directory /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem does not exist or it is not a directory.
+Checked CA file /etc/pki/tls/certs/ca-bundle.crt does not exist or it is not a file.
+Checked directory /etc/pki/tls/certs/ca-bundle.crt does not exist or it is not a directory.
+Checked CA file /etc/ssl/certs/ca-certificates.crt does not exist or it is not a file.
+Checked directory /etc/ssl/certs/ca-certificates.crt does not exist or it is not a directory.
+Checked CA file /etc/ssl/ca-bundle.pem does not exist or it is not a file.
+Checked directory /etc/ssl/ca-bundle.pem does not exist or it is not a directory.
+Checked CA file /usr/ssl/certs/ca-bundle.crt does not exist or it is not a file.
+Checked directory /usr/ssl/certs/ca-bundle.crt does not exist or it is not a directory.
+Checked CA file /opt/local/share/curl/curl-ca-bundle.crt does not exist or it is not a file.
+Checked directory /opt/local/share/curl/curl-ca-bundle.crt does not exist or it is not a directory.
+Checked CA file /usr/local/share/curl/curl-ca-bundle.crt does not exist or it is not a file.
+Checked directory /usr/local/share/curl/curl-ca-bundle.crt does not exist or it is not a directory.
+Checked CA file /usr/share/ssl/certs/ca-bundle.crt does not exist or it is not a file.
+Checked directory /usr/share/ssl/certs/ca-bundle.crt does not exist or it is not a directory.
+Checked CA file /etc/ssl/cert.pem does not exist or it is not a file.
+Checked directory /etc/ssl/cert.pem does not exist or it is not a directory.
+Checked CA file /usr/local/etc/openssl/cert.pem does not exist or it is not a file.
+Checked directory /usr/local/etc/openssl/cert.pem does not exist or it is not a directory.
+Checked CA file /usr/local/etc/openssl@1.1/cert.pem does not exist or it is not a file.
+Checked directory /usr/local/etc/openssl@1.1/cert.pem does not exist or it is not a directory.
+Checked CA file /opt/homebrew/etc/openssl@3/cert.pem does not exist or it is not a file.
+Checked directory /opt/homebrew/etc/openssl@3/cert.pem does not exist or it is not a directory.
+Checked CA file /opt/homebrew/etc/openssl@1.1/cert.pem does not exist or it is not a file.
+Checked directory /opt/homebrew/etc/openssl@1.1/cert.pem does not exist or it is not a directory.
+Checked CA file /etc/pki/tls/certs does not exist or it is not a file.
+Checked directory /etc/pki/tls/certs does not exist or it is not a directory.
+Checked CA file /etc/ssl/certs does not exist or it is not a file.
+Checked directory /etc/ssl/certs does not exist or it is not a directory.
+Checked CA file C:\Users\Eklas\AppData\Local\Temp\ope2816.tmp: valid
+Executing command (CWD): git --version
+Executing command (F:\Xampp\htdocs\asadvanceit): git branch -a --no-color --no-abbrev -v
+Failed to initialize global composer: Composer could not find the config file: C:/Users/Eklas/AppData/Roaming/Composer/composer.json
+
+Reading F:\Xampp\htdocs\asadvanceit/vendor/composer/installed.json (F:\Xampp\htdocs\asadvanceit\vendor\composer\installed.json)
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/packages.json from cache
+Downloading https://repo.packagist.org/packages.json if modified
+[304] https://repo.packagist.org/packages.json
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-laravel~reverb.json from cache
+Downloading https://repo.packagist.org/p2/laravel/reverb.json if modified
+[304] https://repo.packagist.org/p2/laravel/reverb.json
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-laravel~reverb.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-laravel~reverb~dev.json from cache
+Downloading https://repo.packagist.org/p2/laravel/reverb~dev.json if modified
+[304] https://repo.packagist.org/p2/laravel/reverb~dev.json
+[32m./composer.json has been updated[39m
+Reading ./composer.json (F:\Xampp\htdocs\asadvanceit\composer.json)
+Loading config file ./composer.json (F:\Xampp\htdocs\asadvanceit\composer.json)
+Executing command (F:\Xampp\htdocs\asadvanceit): git branch -a --no-color --no-abbrev -v
+Failed to initialize global composer: Composer could not find the config file: C:/Users/Eklas/AppData/Roaming/Composer/composer.json
+
+Reading F:\Xampp\htdocs\asadvanceit/vendor/composer/installed.json (F:\Xampp\htdocs\asadvanceit\vendor\composer\installed.json)
+[32mRunning composer update laravel/reverb[39m
+Reading ./composer.lock (F:\Xampp\htdocs\asadvanceit\composer.lock)
+[32mLoading composer repositories with package information[39m
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/packages.json from cache
+Downloading https://repo.packagist.org/packages.json if modified
+[304] https://repo.packagist.org/packages.json
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-laravel~reverb.json from cache
+Downloading https://repo.packagist.org/p2/laravel/reverb.json if modified
+[304] https://repo.packagist.org/p2/laravel/reverb.json
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-clue~redis-react.json from cache
+Downloading https://repo.packagist.org/p2/clue/redis-react.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-pusher~pusher-php-server.json from cache
+Downloading https://repo.packagist.org/p2/pusher/pusher-php-server.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-ratchet~rfc6455.json from cache
+Downloading https://repo.packagist.org/p2/ratchet/rfc6455.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~promise-timer.json from cache
+Downloading https://repo.packagist.org/p2/react/promise-timer.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~socket.json from cache
+Downloading https://repo.packagist.org/p2/react/socket.json if modified
+[304] https://repo.packagist.org/p2/clue/redis-react.json
+[304] https://repo.packagist.org/p2/pusher/pusher-php-server.json
+[304] https://repo.packagist.org/p2/ratchet/rfc6455.json
+[304] https://repo.packagist.org/p2/react/promise-timer.json
+[304] https://repo.packagist.org/p2/react/socket.json
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-clue~redis-protocol.json from cache
+Downloading https://repo.packagist.org/p2/clue/redis-protocol.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-evenement~evenement.json from cache
+Downloading https://repo.packagist.org/p2/evenement/evenement.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~event-loop.json from cache
+Downloading https://repo.packagist.org/p2/react/event-loop.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~promise.json from cache
+Downloading https://repo.packagist.org/p2/react/promise.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~promise-timer.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~socket.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-paragonie~sodium_compat.json from cache
+Downloading https://repo.packagist.org/p2/paragonie/sodium_compat.json if modified
+Downloading https://repo.packagist.org/p2/psr/http-factory-implementation.json
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~dns.json from cache
+Downloading https://repo.packagist.org/p2/react/dns.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~stream.json from cache
+Downloading https://repo.packagist.org/p2/react/stream.json if modified
+[304] https://repo.packagist.org/p2/clue/redis-protocol.json
+[304] https://repo.packagist.org/p2/evenement/evenement.json
+[304] https://repo.packagist.org/p2/react/event-loop.json
+[304] https://repo.packagist.org/p2/react/promise.json
+[304] https://repo.packagist.org/p2/paragonie/sodium_compat.json
+[404] https://repo.packagist.org/p2/psr/http-factory-implementation.json
+[304] https://repo.packagist.org/p2/react/dns.json
+[304] https://repo.packagist.org/p2/react/stream.json
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~dns.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~promise-timer.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-paragonie~random_compat.json from cache
+Downloading https://repo.packagist.org/p2/paragonie/random_compat.json if modified
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~cache.json from cache
+Downloading https://repo.packagist.org/p2/react/cache.json if modified
+[304] https://repo.packagist.org/p2/paragonie/random_compat.json
+[304] https://repo.packagist.org/p2/react/cache.json
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~promise-timer.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~event-loop.json from cache
+Built pool.
+Running security advisory pool filter.
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-laravel~reverb.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-clue~redis-react.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-pusher~pusher-php-server.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-ratchet~rfc6455.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~promise-timer.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~socket.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-clue~redis-protocol.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-evenement~evenement.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~event-loop.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~promise.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-paragonie~sodium_compat.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~dns.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~stream.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-paragonie~random_compat.json from cache
+Reading C:/Users/Eklas/AppData/Local/Composer/repo/https---repo.packagist.org/provider-react~cache.json from cache
+Security advisory pool filter completed in 0.016 seconds
+[32mFound 397 package versions referenced in your dependency graph. 100 (25%) were filtered away.[39m
+Running pool optimizer.
+Pool optimizer completed in 0.017 seconds
+[32mFound 297 package versions referenced in your dependency graph. 86 (29%) were optimized away.[39m
+[32mUpdating dependencies[39m
+Generating rules
+Resolving dependencies through SAT
+
+Dependency resolution completed in 0.003 seconds
+Downloading https://packagist.org/providers/ext-fileinfo.json
+[200] https://packagist.org/providers/ext-fileinfo.json
+[37;41mYour requirements could not be resolved to an installable set of packages.[39;49m
+
+  Problem 1
+    - laravel/framework is locked to version v12.41.1 and an update of this package was not requested.
+    - laravel/framework v12.41.1 requires league/flysystem-local ^3.25.1 -> satisfiable by league/flysystem-local[3.30.2].
+    - league/flysystem-local 3.30.2 requires ext-fileinfo * -> it is missing from your system. Install or enable PHP's fileinfo extension.
+
+To enable extensions, verify that they are enabled in your .ini files:
+    - C:\php-8.5.2\php.ini
+You can also run `php --ini` in a terminal to see which files are used by PHP in CLI mode.
+Alternatively, you can run Composer with `--ignore-platform-req=ext-fileinfo` to temporarily ignore these required extensions.
+You can also try re-running composer require with an explicit version constraint, e.g. "composer require laravel/reverb:*" to figure out if any version is installable, or "composer require laravel/reverb:^2.1" if you know which you need.
+
+[37;41mInstallation failed, reverting ./composer.json and ./composer.lock to their original content.[39;49m

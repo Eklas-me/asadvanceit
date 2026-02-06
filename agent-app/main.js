@@ -17,7 +17,7 @@ const errorMessage = document.getElementById('errorMessage');
 const successMessage = document.getElementById('successMessage');
 
 // API URL - Change this to your production URL when deploying
-const API_URL = 'http://192.168.68.102:8000/api/agent/login';
+const API_URL = 'https://test.asadvanceit.com/api/agent/login';
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
