@@ -21,6 +21,9 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// App Download Route
+Route::get('/download-agent', [App\Http\Controllers\AppController::class, 'downloadAgent'])->name('app.download');
+
 // Magic Login Token Consumer (Agent calls this URL to auto-login user)
 Route::get('/magic-login/{token}', function ($token) {
     $magicToken = \App\Models\MagicLoginToken::where('token', $token)->first();

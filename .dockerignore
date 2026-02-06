@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build output (will be generated in Docker)
+public/build/
+public/hot
+
+# Git
+.git/
+.gitattributes
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Environment (will be set via Coolify)
+.env
+.env.local
+.env.*.local
+
+# Testing
+tests/
+phpunit.xml
+.phpunit.result.cache
+
+# Development
+.editorconfig
+*.md
+!README.md
+
+# Docker itself
+docker-compose*.yml
+Dockerfile*
+
+# Desktop agent app (not needed in web container)
+agent-app/
+
+# Misc
+*.log
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*
+.DS_Store
+Thumbs.db
+
+# PHP standalone scripts
+create_pending_user.php
+create_users.php
+test_db.php
