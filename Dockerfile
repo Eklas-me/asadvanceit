@@ -52,6 +52,7 @@ RUN apk add --no-cache --virtual .build-deps \
         intl \
         mbstring \
         opcache \
+        pcntl \
     && apk del .build-deps
 
 # Install Composer
