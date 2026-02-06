@@ -45,11 +45,6 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Create PHP-FPM socket directory
-mkdir -p /run
-touch /run/php-fpm.sock
-chown www-data:www-data /run/php-fpm.sock
-
 echo "✅ Application ready! Starting services..."
 
 # Execute the main command (supervisord)

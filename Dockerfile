@@ -81,11 +81,9 @@ RUN chmod +x /entrypoint.sh \
 
 # Note: Using external MySQL database (no local SQLite)
 
-# Configure PHP-FPM
-RUN sed -i 's/listen = 127.0.0.1:9000/listen = \/run\/php-fpm.sock/' /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i 's/;listen.owner = www-data/listen.owner = www-data/' /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i 's/;listen.group = www-data/listen.group = www-data/' /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i 's/;listen.mode = 0660/listen.mode = 0660/' /usr/local/etc/php-fpm.d/www.conf
+# Configure PHP-FPM to use TCP instead of Unix socket (more reliable in containers)
+RUN sed -i 's/listen = 127.0.0.1:9000/listen = 9000/' /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i 's/listen = 9000/listen = 127.0.0.1:9000/' /usr/local/etc/php-fpm.d/zz-docker.conf 2>/dev/null || true
 
 # Configure PHP for production
 RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache.ini \
