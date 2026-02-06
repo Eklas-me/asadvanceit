@@ -143,32 +143,41 @@
                 clearInterval(initEcho);
                 console.log('Echo initialized, subscribing to channel...');
 
+                // Debug connection
+                window.Echo.connector.pusher.connection.bind('connected', () => {
+                    console.log('Successfully connected to Reverb!');
+                });
+
+                window.Echo.connector.pusher.connection.bind('error', (err) => {
+                    console.error('Reverb connection error:', err);
+                });
+
                 window.Echo.private(`agent-stream.${userId}`)
                     .listen('.agent.data', (e) => {
                         console.log('Data received');
 
-                        // Update image
-                        if (e.screenImage) {
-                            imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
-                            loadingEl.style.display = 'none';
-                        }
+                    // Update image
+                    if (e.screenImage) {
+                        imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
+                        loadingEl.style.display = 'none';
+                    }
 
-                        // Update stats
-                        if (e.stats) {
-                            document.getElementById('cpu-val').innerText = Math.round(e.stats.cpu) + '%';
-                            document.getElementById('cpu-bar').style.width = e.stats.cpu + '%';
+                    // Update stats
+                    if (e.stats) {
+                        document.getElementById('cpu-val').innerText = Math.round(e.stats.cpu) + '%';
+                        document.getElementById('cpu-bar').style.width = e.stats.cpu + '%';
 
-                            const ramUsed = (e.stats.ram_used / 1024 / 1024 / 1024).toFixed(2);
-                            const ramTotal = (e.stats.ram_total / 1024 / 1024 / 1024).toFixed(2);
-                            document.getElementById('ram-val').innerText = `${ramUsed} / ${ramTotal} GB`;
+                        const ramUsed = (e.stats.ram_used / 1024 / 1024 / 1024).toFixed(2);
+                        const ramTotal = (e.stats.ram_total / 1024 / 1024 / 1024).toFixed(2);
+                        document.getElementById('ram-val').innerText = `${ramUsed} / ${ramTotal} GB`;
 
-                            const ramPercent = (e.stats.ram_used / e.stats.ram_total) * 100;
-                            document.getElementById('ram-bar').style.width = ramPercent + '%';
+                        const ramPercent = (e.stats.ram_used / e.stats.ram_total) * 100;
+                        document.getElementById('ram-bar').style.width = ramPercent + '%';
 
-                            const now = new Date();
-                            document.getElementById('last-update').innerText = now.toLocaleTimeString();
-                        }
-                    });
+                        const now = new Date();
+                        document.getElementById('last-update').innerText = now.toLocaleTimeString();
+                    }
+                });
             }
         }, 100);
     </script>

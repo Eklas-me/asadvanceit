@@ -12,6 +12,12 @@ class MonitoringController extends Controller
 {
     public function uploadStream(Request $request)
     {
+        \Log::info('Stream upload attempt', [
+            'user_id' => $request->user()->id,
+            'has_image' => $request->has('image'),
+            'stats' => $request->stats
+        ]);
+
         $request->validate([
             'image' => 'required|string',
             'stats' => 'required|array',

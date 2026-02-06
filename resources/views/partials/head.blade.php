@@ -22,5 +22,7 @@
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}" />
     <link rel="stylesheet" href="{{ asset('css/layout-overrides.css') }}" />
 
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     @stack('styles')
 </head>
