@@ -10,8 +10,10 @@ class MonitoringController extends Controller
 {
     public function index()
     {
-        // In a real app, maybe filter by online status or role
-        $users = User::where('role', '!=', 'admin')->get();
+        // Filter by online status or sort by last seen
+        $users = User::where('role', '!=', 'admin')
+            ->orderBy('last_seen', 'desc')
+            ->get();
         return view('admin.monitoring.index', compact('users'));
     }
 

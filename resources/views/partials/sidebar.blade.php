@@ -22,6 +22,12 @@
             </li>
 
             @if(auth()->user()->role === 'admin')
+                <li class="nav-item {{ request()->is('admin/monitoring*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.monitoring.index') }}">
+                        <i class="fas fa-desktop"></i>
+                        <span>Live Monitoring</span>
+                    </a>
+                </li>
                 <li class="nav-item {{ request()->is('admin/tokens*') ? 'active' : '' }}">
                     <a href="{{ route('admin.tokens.index') }}">
                         <i class="fas fa-key"></i>
