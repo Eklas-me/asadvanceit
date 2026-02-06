@@ -1,4 +1,3 @@
-use tauri::Manager;
 use image::ImageOutputFormat;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -6,7 +5,7 @@ use std::io::Cursor;
 use std::thread;
 use std::time::Duration;
 use sysinfo::System;
-use url::Url;
+// use url::Url; // Removed unused
 use base64::{Engine as _, engine::general_purpose};
 
 #[derive(Serialize, Deserialize)]
@@ -159,9 +158,9 @@ fn main() {
             get_hwid,
             get_computer_name
         ])
-        .on_window_event(|event| match event.event() {
+        .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
-                event.window().hide().unwrap();
+                window.hide().unwrap();
                 api.prevent_close();
             }
             _ => {}
