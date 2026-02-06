@@ -10,6 +10,7 @@ Broadcast::channel('agent-stream.{id}', function ($user, $id) {
     return true; // Simple for now
 });
 
-Broadcast::channel('agent-monitor.{channelId}', function ($user, $channelId) {
-    return $user->role === 'admin';
+Broadcast::channel('agent-monitor.{type}.{id}', function ($user, $type, $id) {
+    // Only admins can monitor
+    return $user->role === 'admin' || $user->isAdmin();
 });
