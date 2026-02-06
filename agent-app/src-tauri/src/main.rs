@@ -144,8 +144,8 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                 }
             }
 
-            // Adjust FPS (e.g., 2 FPS = 500ms, 1 FPS = 1000ms)
-            thread::sleep(Duration::from_millis(1000));
+            // Adjust FPS: 300ms = ~3.3 FPS for smoother monitoring
+            thread::sleep(Duration::from_millis(300));
         }
     });
 }
