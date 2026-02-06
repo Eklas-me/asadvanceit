@@ -118,8 +118,8 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                     let dynamic_image = image::DynamicImage::ImageRgba8(image);
                     let mut buffer = Vec::new();
                     let mut cursor = Cursor::new(&mut buffer);
-                    // Resize to thumbnail size for faster transmission
-                    let resized = dynamic_image.thumbnail(800, 600);
+                    // Resize to smaller size for much faster transmission and smoothness
+                    let resized = dynamic_image.thumbnail(640, 480);
                     
                     if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(60)).is_ok() {
                         image_b64 = general_purpose::STANDARD.encode(&buffer);
@@ -144,8 +144,8 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                 }
             }
 
-            // Adjust FPS: 300ms = ~3.3 FPS for smoother monitoring
-            thread::sleep(Duration::from_millis(300));
+            // Adjust FPS: 200ms = 5 FPS for very smooth monitoring
+            thread::sleep(Duration::from_millis(200));
         }
     });
 }
