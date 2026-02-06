@@ -12,4 +12,9 @@ class Device extends Model
         'user_id',
         'last_seen'
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
