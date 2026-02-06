@@ -13,6 +13,10 @@ class Device extends Model
         'last_seen'
     ];
 
+    protected $casts = [
+        'last_seen' => 'datetime',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
