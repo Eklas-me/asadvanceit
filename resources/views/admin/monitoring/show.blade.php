@@ -298,7 +298,8 @@
                     <div class="pt-2 border-top border-secondary">
                         <small class="text-muted d-block mb-1">Hardware ID</small>
                         <div class="text-white-50 font-monospace" style="font-size: 0.75rem; word-break: break-all;">
-                            {{ $device->hardware_id }}</div>
+                            {{ $device->hardware_id }}
+                        </div>
                     </div>
                 </div>
 
@@ -324,14 +325,8 @@
         const deviceChannelName = `agent-monitor.device.${hwid}`;
         const userChannelName = "{{ $device->user ? 'agent-monitor.user.' . $device->user->id : '' }}";
 
-        // Element references
-        const videoEl = document.getElementById('remoteVideo');
-        const imgEl = document.getElementById('stream-image');
-        const loadingEl = document.getElementById('loading-text');
-        const cpuStat = document.getElementById('cpu-stat');
-        const cpuBar = document.getElementById('cpu-bar');
-        const ramStat = document.getElementById('ram-stat');
-        const ramBar = document.getElementById('ram-bar');
+        // Element references helper
+        const getEl = (id) => document.getElementById(id);
 
         let pc = null;
         let isPlaying = true;
@@ -398,15 +393,23 @@
 
             dc.onmessage = (event) => {
                 if (!isPlaying) return;
-
+                
                 const blob = new Blob([event.data], { type: 'image/jpeg' });
                 const url = URL.createObjectURL(blob);
-
-                imgEl.src = url;
-                imgEl.style.display = 'block';
-                loadingEl.style.display = 'none';
-
-                imgEl.onload = () => URL.revokeObjectURL(url);
+                
+                const imgEl = getEl('stream-image');
+                const loadingEl = getEl('loading-text');
+                
+                if (imgEl) {
+                    imgEl.src = url;
+                    imgEl.style.display = 'block';
+                    imgEl.onload = () => URL.revokeObjectURL(url);
+                }
+                
+                if (loadingEl) loadingEl.style.display = 'none';
+                
+                const videoEl = getEl('remoteVideo');
+                if (videoEl) videoEl.style.display = 'none';
             };
         }
 
@@ -460,10 +463,15 @@
         function setupListeners(channel) {
             channel.listen('.agent.data', (e) => {
                 if (e.stats) updateStats(e.stats);
+                
                 // Legacy Fallback
-                if (e.screenImage && loadingEl.style.display !== 'none') {
-                    imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
-                    imgEl.style.display = 'block';
+                const loadingEl = getEl('loading-text');
+                const imgEl = getEl('stream-image');
+                if (e.screenImage && loadingEl && loadingEl.style.display !== 'none') {
+                    if (imgEl) {
+                        imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
+                        imgEl.style.display = 'block';
+                    }
                     loadingEl.style.display = 'none';
                 }
             });
@@ -513,15 +521,20 @@
         }, 500);
 
         function updateStats(stats) {
+            const cpuStat = getEl('cpu-stat');
+            const cpuBar = getEl('cpu-bar');
+            const ramStat = getEl('ram-stat');
+            const ramBar = getEl('ram-bar');
+
             if (stats.cpu !== undefined) {
-                cpuStat.textContent = Math.round(stats.cpu) + '%';
-                cpuBar.style.width = Math.round(stats.cpu) + '%';
+                if (cpuStat) cpuStat.textContent = Math.round(stats.cpu) + '%';
+                if (cpuBar) cpuBar.style.width = Math.round(stats.cpu) + '%';
             }
             if (stats.ram_used !== undefined && stats.ram_total !== undefined) {
                 const usedGb = (stats.ram_used / (1024 ** 3)).toFixed(1);
                 const totalGb = (stats.ram_total / (1024 ** 3)).toFixed(1);
-                ramStat.textContent = `${usedGb} / ${totalGb} GB`;
-                ramBar.style.width = (stats.ram_used / stats.ram_total * 100) + '%';
+                if (ramStat) ramStat.textContent = `${usedGb} / ${totalGb} GB`;
+                if (ramBar) ramBar.style.width = (stats.ram_used / stats.ram_total * 100) + '%';
             }
         }
     </script>
