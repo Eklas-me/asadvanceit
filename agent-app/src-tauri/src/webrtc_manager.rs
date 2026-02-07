@@ -36,12 +36,30 @@ impl WebRTCManager {
         let data_channel = Arc::new(Mutex::new(None));
         let dc_clone = Arc::clone(&data_channel);
         
+        // Let's create the DataChannel proactively from the Agent side as well
+        let dc_init = webrtc::data_channel::data_channel_init::RTCDataChannelInit {
+            ordered: Some(false), // Better for video frames
+            max_retransmits: Some(0), // No retransmits = lower latency
+            ..Default::default()
+        };
+        
+        let local_dc = peer_connection.create_data_channel("video", Some(dc_init)).await?;
+        println!(">>> Created local DataChannel: video");
+        
+        {
+            let mut d = data_channel.lock().await;
+            *d = Some(local_dc);
+        }
+
         peer_connection.on_data_channel(Box::new(move |dc: Arc<RTCDataChannel>| {
             let dc_clone = Arc::clone(&dc_clone);
+            let label = dc.label().to_string();
             Box::pin(async move {
-                println!(">>> Data Channel Opened: {}", dc.label());
-                let mut d = dc_clone.lock().await;
-                *d = Some(dc);
+                println!(">>> Remote peer created DataChannel: {}", label);
+                if label == "video" {
+                    let mut d = dc_clone.lock().await;
+                    *d = Some(dc);
+                }
             })
         }));
 
@@ -71,9 +89,21 @@ impl WebRTCManager {
         self.peer_connection.set_remote_description(desc).await?;
         
         let answer = self.peer_connection.create_answer(None).await?;
+        
+        // Create a channel to wait for ICE gathering to complete
+        let mut gather_complete = self.peer_connection.gathering_complete_promise().await;
+        
         self.peer_connection.set_local_description(answer.clone()).await?;
         
-        Ok(answer.sdp)
+        // Wait for ICE gathering to complete
+        let _ = gather_complete.recv().await;
+        
+        // Return the updated SDP with candidates
+        if let Some(local_desc) = self.peer_connection.local_description().await {
+            Ok(local_desc.sdp)
+        } else {
+            Ok(answer.sdp)
+        }
     }
 
     pub async fn add_ice_candidate(&self, candidate: webrtc::ice_transport::ice_candidate::RTCIceCandidateInit) -> webrtc::error::Result<()> {

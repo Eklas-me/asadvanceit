@@ -36,6 +36,12 @@ class WebRTCSignaling implements ShouldBroadcastNow
      */
     public function broadcastOn(): array
     {
+        if (str_starts_with($this->targetChannel, 'device-control')) {
+            return [
+                new Channel($this->targetChannel),
+            ];
+        }
+
         return [
             new PrivateChannel($this->targetChannel),
         ];
@@ -44,5 +50,15 @@ class WebRTCSignaling implements ShouldBroadcastNow
     public function broadcastAs(): string
     {
         return $this->eventName;
+    }
+
+    /**
+     * Get the data to broadcast.
+     *
+     * @return array<string, mixed>
+     */
+    public function broadcastWith(): array
+    {
+        return $this->payload;
     }
 }
