@@ -318,99 +318,97 @@
 
 @push('scripts')
     <script type="module">
+        // 1. Data & Channels
         const hwid = "{{ $device->hardware_id }}";
-        const agentControlChannel = `device-control.${hwid}`;
+        const userId = "{{ $device->user_id }}";
+        const deviceChannelId = `agent-monitor.device.${hwid}`;
+        const userChannelId = userId ? `agent-monitor.user.${userId}` : null;
+        const controlChannel = `device-control.${hwid}`;
 
-        // Channel names for dual subscription
-        const deviceChannelName = `agent-monitor.device.${hwid}`;
-        const userChannelName = "{{ $device->user ? 'agent-monitor.user.' . $device->user->id : '' }}";
-
-        // Element references helper
-        const getEl = (id) => document.getElementById(id);
-
+        // 2. State & Elements
         let pc = null;
         let isPlaying = true;
-        let activeDataChannel = null;
+        const getEl = (id) => document.getElementById(id);
 
         function log(msg, type = 'info') {
-            const logEl = document.getElementById('debug-log');
-            if (!logEl) return;
-            const color = type === 'error' ? 'text-danger' : (type === 'success' ? 'text-success' : 'text-primary');
-            const time = new Date().toLocaleTimeString();
-            logEl.innerHTML += `<div><span class="text-muted">[${time}]</span> <span class="${color}">${msg}</span></div>`;
-            logEl.scrollTop = logEl.scrollHeight;
+            const logEl = getEl('debug-log');
+            if (logEl) {
+                const time = new Date().toLocaleTimeString();
+                const color = type === 'error' ? 'text-danger' : (type === 'success' ? 'text-success' : 'text-primary');
+                logEl.innerHTML += `<div><span class="text-muted">[${time}]</span> <span class="${color}">${msg}</span></div>`;
+                logEl.scrollTop = logEl.scrollHeight;
+            }
             console.log(`[${type.toUpperCase()}] ${msg}`);
         }
 
-        async function startWebRTC() {
-            log('Initializing WebRTC PeerConnection...', 'info');
-            if (pc) {
-                try { pc.close(); } catch (e) { }
-            }
+        // 3. WebRTC Logic
+        async function initWebRTC() {
+            log('Starting WebRTC Initialization...', 'info');
+            if (pc) { try { pc.close(); } catch (e) { } }
 
             pc = new RTCPeerConnection({
                 iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
             });
 
+            pc.onicecandidate = (e) => {
+                if (e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate });
+            };
+
             pc.oniceconnectionstatechange = () => {
-                log(`ICE Connection State: ${pc.iceConnectionState}`, pc.iceConnectionState === 'failed' ? 'error' : 'info');
-                document.getElementById('streamStatus').textContent = `State: ${pc.iceConnectionState}`;
+                log(`Connection State: ${pc.iceConnectionState}`, 'info');
+                const statusEl = getEl('streamStatus');
+                if (statusEl) statusEl.textContent = `Status: ${pc.iceConnectionState}`;
             };
 
-            pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                    sendSignal({ type: 'candidate', candidate: event.candidate });
+            pc.ontrack = (e) => {
+                log('Remote Track Received', 'success');
+                const v = getEl('remoteVideo');
+                if (v) {
+                    v.srcObject = e.streams[0];
+                    v.style.display = 'block';
                 }
+                const i = getEl('stream-image');
+                if (i) i.style.display = 'none';
+                const l = getEl('loading-text');
+                if (l) l.style.display = 'none';
             };
 
-            pc.ondatachannel = (event) => {
-                const dc = event.channel;
-                log(`Incoming DataChannel received: ${dc.label}`, 'success');
-                setupDataChannel(dc);
+            pc.ondatachannel = (e) => {
+                log('DataChannel Received: ' + e.channel.label, 'success');
+                setupDC(e.channel);
             };
 
-            // Local fallback channel
-            const localDc = pc.createDataChannel("video_init");
-            setupDataChannel(localDc);
+            const dc = pc.createDataChannel("video_init");
+            setupDC(dc);
 
             try {
                 const offer = await pc.createOffer({ offerToReceiveVideo: true });
                 await pc.setLocalDescription(offer);
-                log('Offer created. Sending to Agent...', 'info');
                 sendSignal({ type: 'offer', sdp: offer.sdp });
             } catch (err) {
-                log('Failed to create offer: ' + err.message, 'error');
+                log('Offer Error: ' + err.message, 'error');
             }
         }
 
-        function setupDataChannel(dc) {
+        function setupDC(dc) {
             dc.binaryType = 'arraybuffer';
-            dc.onopen = () => {
-                log(`DataChannel '${dc.label}' is now OPEN`, 'success');
-                activeDataChannel = dc;
-                document.getElementById('streamStatus').textContent = 'Live Streaming Ready';
-            };
-
-            dc.onmessage = (event) => {
+            dc.onmessage = (e) => {
                 if (!isPlaying) return;
-                
-                const blob = new Blob([event.data], { type: 'image/jpeg' });
+                const blob = new Blob([e.data], { type: 'image/jpeg' });
                 const url = URL.createObjectURL(blob);
-                
-                const imgEl = getEl('stream-image');
-                const loadingEl = getEl('loading-text');
-                
-                if (imgEl) {
-                    imgEl.src = url;
-                    imgEl.style.display = 'block';
-                    imgEl.onload = () => URL.revokeObjectURL(url);
+                const i = getEl('stream-image');
+                if (i) {
+                    i.src = url;
+                    i.style.display = 'block';
+                    i.onload = () => URL.revokeObjectURL(url);
                 }
-                
-                if (loadingEl) loadingEl.style.display = 'none';
-                
-                const videoEl = getEl('remoteVideo');
-                if (videoEl) videoEl.style.display = 'none';
+                const l = getEl('loading-text');
+                if (l) l.style.display = 'none';
+                const v = getEl('remoteVideo');
+                if (v) v.style.display = 'none';
             };
+            dc.onclose = () => log('DataChannel Closed', 'error');
+            dc.onerror = (err) => log('DataChannel Error: ' + err.message, 'error');
         }
 
         async function sendSignal(payload, eventType = 'webrtc.signal') {
@@ -421,121 +419,84 @@
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify({
-                        payload: payload,
-                        target_channel: agentControlChannel,
-                        event_type: eventType
-                    })
+                    body: JSON.stringify({ payload, target_channel: controlChannel, event_type: eventType })
                 });
-            } catch (e) {
-                log('Signal send failed: ' + e.message, 'error');
-            }
+            } catch (e) { log('Signal Error: ' + e.message, 'error'); }
         }
 
-        window.togglePlay = function () {
-            if (isPlaying) {
-                isPlaying = false;
-                document.getElementById('playerWrapper').classList.add('paused');
-                document.getElementById('playIcon').className = 'fas fa-play';
-                sendControlAction('stop_capture');
-            } else {
-                isPlaying = true;
-                document.getElementById('playerWrapper').classList.remove('paused');
-                document.getElementById('playIcon').className = 'fas fa-pause';
-                sendControlAction('start_capture');
-            }
-        };
-
-        window.sendControlAction = function (action) {
-            log(`Sending Control Action: ${action}`, 'info');
-            sendSignal({ action: action }, 'control');
-        };
-
-        window.toggleFullscreen = function () {
-            const el = document.getElementById('playerWrapper');
-            if (!document.fullscreenElement) {
-                el.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
-        };
-
-        function setupListeners(channel) {
+        function setupEchoListeners(channel, name) {
+            log(`Listening on channel: ${name}`, 'info');
             channel.listen('.agent.data', (e) => {
-                if (e.stats) updateStats(e.stats);
-                
-                // Legacy Fallback
-                const loadingEl = getEl('loading-text');
-                const imgEl = getEl('stream-image');
-                if (e.screenImage && loadingEl && loadingEl.style.display !== 'none') {
-                    if (imgEl) {
-                        imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
-                        imgEl.style.display = 'block';
+                if (e.stats) updateUIStats(e.stats);
+                const l = getEl('loading-text');
+                if (e.screenImage && l && l.style.display !== 'none') {
+                    const i = getEl('stream-image');
+                    if (i) {
+                        i.src = 'data:image/jpeg;base64,' + e.screenImage;
+                        i.style.display = 'block';
                     }
-                    loadingEl.style.display = 'none';
+                    l.style.display = 'none';
                 }
             });
 
             channel.listen('.webrtc.signal', async (data) => {
-                log(`Received Signal: ${data.type}`, 'info');
-                if (data.type === 'answer' && pc) {
+                log(`Signal Received: ${data.type}`, 'info');
+                if (!pc) return;
+                if (data.type === 'answer') {
                     try {
-                        log('Setting Remote Description (Answer)...', 'info');
                         let sdp = data.sdp;
-                        if (sdp) {
-                            sdp = sdp.split('\n').map(l => l.trim()).join('\r\n') + '\r\n';
-                        }
-                        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sdp }));
-                    } catch (err) {
-                        log('SDP Answer Error: ' + err.message, 'error');
-                    }
-                } else if (data.type === 'candidate' && pc) {
-                    try {
-                        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-                    } catch (err) {
-                        log('ICE Candidate Error: ' + err.message, 'error');
-                    }
+                        if (sdp && !sdp.includes('\r\n')) sdp = sdp.split('\n').join('\r\n');
+                        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
+                    } catch (err) { log('SDP Error: ' + err.message, 'error'); }
+                } else if (data.type === 'candidate' && data.candidate) {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch (e) { }
                 }
             });
         }
 
-        const checkEcho = setInterval(() => {
+        const waitEcho = setInterval(() => {
             if (window.Echo) {
-                clearInterval(checkEcho);
-                log('Echo initialized successfully', 'success');
-
-                // Subscribe to device channel (primary for signaling)
-                log(`Subscribing to device channel: ${deviceChannelName}`, 'info');
-                const deviceChannel = window.Echo.private(deviceChannelName);
-                setupListeners(deviceChannel);
-
-                // Subscribe to user channel if exists (often used for stats)
-                if (userChannelName) {
-                    log(`Subscribing to user channel: ${userChannelName}`, 'info');
-                    const userChannel = window.Echo.private(userChannelName);
-                    setupListeners(userChannel);
+                clearInterval(waitEcho);
+                log('Echo Connected', 'success');
+                const chan1 = window.Echo.private(deviceChannelId);
+                setupEchoListeners(chan1, deviceChannelId);
+                if (userChannelId && userChannelId !== deviceChannelId) {
+                    const chan2 = window.Echo.private(userChannelId);
+                    setupEchoListeners(chan2, userChannelId);
                 }
-
-                setTimeout(startWebRTC, 1000);
+                setTimeout(initWebRTC, 1000);
             }
         }, 500);
 
-        function updateStats(stats) {
-            const cpuStat = getEl('cpu-stat');
-            const cpuBar = getEl('cpu-bar');
-            const ramStat = getEl('ram-stat');
-            const ramBar = getEl('ram-bar');
-
+        function updateUIStats(stats) {
+            const cs = getEl('cpu-stat'), cb = getEl('cpu-bar'), rs = getEl('ram-stat'), rb = getEl('ram-bar');
             if (stats.cpu !== undefined) {
-                if (cpuStat) cpuStat.textContent = Math.round(stats.cpu) + '%';
-                if (cpuBar) cpuBar.style.width = Math.round(stats.cpu) + '%';
+                if (cs) cs.textContent = Math.round(stats.cpu) + '%';
+                if (cb) cb.style.width = Math.round(stats.cpu) + '%';
             }
             if (stats.ram_used !== undefined && stats.ram_total !== undefined) {
-                const usedGb = (stats.ram_used / (1024 ** 3)).toFixed(1);
-                const totalGb = (stats.ram_total / (1024 ** 3)).toFixed(1);
-                if (ramStat) ramStat.textContent = `${usedGb} / ${totalGb} GB`;
-                if (ramBar) ramBar.style.width = (stats.ram_used / stats.ram_total * 100) + '%';
+                const u = (stats.ram_used / (1024 ** 3)).toFixed(1), t = (stats.ram_total / (1024 ** 3)).toFixed(1);
+                if (rs) rs.textContent = `${u} / ${t} GB`;
+                if (rb) rb.style.width = (stats.ram_used / stats.ram_total * 100) + '%';
             }
         }
+
+        window.togglePlay = () => {
+            isPlaying = !isPlaying;
+            document.getElementById('playerWrapper').classList.toggle('paused', !isPlaying);
+            document.getElementById('playIcon').className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+            sendControlAction(isPlaying ? 'start_capture' : 'stop_capture');
+        };
+
+        window.sendControlAction = (action) => {
+            log(`Action: ${action}`, 'info');
+            sendSignal({ action: action }, 'control');
+        };
+
+        window.toggleFullscreen = () => {
+            const p = document.getElementById('playerWrapper');
+            if (!document.fullscreenElement) p.requestFullscreen();
+            else document.exitFullscreen();
+        };
     </script>
 @endpush
