@@ -157,6 +157,19 @@
                     }
                 };
 
+                pc.ondatachannel = (event) => {
+                    const receiveChannel = event.channel;
+                    receiveChannel.onmessage = (e) => {
+                        const blob = new Blob([e.data], { type: 'image/jpeg' });
+                        const url = URL.createObjectURL(blob);
+                        imgEl.src = url;
+                        imgEl.style.display = 'block';
+                        loadingEl.style.display = 'none';
+                        // Clean up to prevent leaks
+                        imgEl.onload = () => URL.revokeObjectURL(url);
+                    };
+                };
+
                 pc.ontrack = (event) => {
                     console.log('Received remote track');
                     videoEl.srcObject = event.streams[0];

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use webrtc::api::media_engine::MediaEngine;
 use webrtc::api::APIBuilder;
 use webrtc::peer_connection::configuration::RTCConfiguration;
@@ -6,10 +7,13 @@ use webrtc::peer_connection::RTCPeerConnection;
 use webrtc::track::track_local::track_local_static_sample::TrackLocalStaticSample;
 use webrtc::track::track_local::TrackLocal;
 use webrtc::media::Sample;
+use webrtc::data_channel::RTCDataChannel;
+use webrtc::data_channel::data_channel_state::RTCDataChannelState;
 
 pub struct WebRTCManager {
     peer_connection: Arc<RTCPeerConnection>,
     video_track: Arc<TrackLocalStaticSample>,
+    data_channel: Arc<Mutex<Option<Arc<RTCDataChannel>>>>,
 }
 
 impl WebRTCManager {
@@ -29,6 +33,18 @@ impl WebRTCManager {
         
         let peer_connection = Arc::new(api.new_peer_connection(config).await?);
         
+        let data_channel = Arc::new(Mutex::new(None));
+        let dc_clone = Arc::clone(&data_channel);
+        
+        peer_connection.on_data_channel(Box::new(move |dc: Arc<RTCDataChannel>| {
+            let dc_clone = Arc::clone(&dc_clone);
+            Box::pin(async move {
+                println!(">>> Data Channel Opened: {}", dc.label());
+                let mut d = dc_clone.lock().await;
+                *d = Some(dc);
+            })
+        }));
+
         let video_track = Arc::new(TrackLocalStaticSample::new(
             webrtc::rtp_transceiver::rtp_codec::RTCRtpCodecCapability {
                 mime_type: "video/h264".to_owned(),
@@ -43,6 +59,7 @@ impl WebRTCManager {
         Ok(Self {
             peer_connection,
             video_track,
+            data_channel,
         })
     }
 
@@ -69,5 +86,15 @@ impl WebRTCManager {
             duration: std::time::Duration::from_millis(33), // ~30 FPS
             ..Default::default()
         }).await
+    }
+
+    pub async fn send_data(&self, buffer: Vec<u8>) -> webrtc::error::Result<()> {
+        let dc = self.data_channel.lock().await;
+        if let Some(channel) = dc.as_ref() {
+            if channel.ready_state() == RTCDataChannelState::Open {
+                let _ = channel.send(&buffer.into()).await;
+            }
+        }
+        Ok(())
     }
 }

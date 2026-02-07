@@ -3,9 +3,22 @@ use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D11::*;
 use windows::Win32::Graphics::Dxgi::{IDXGIDevice, IDXGIOutput1, IDXGIOutputDuplication, DXGI_OUTDUPL_FRAME_INFO};
 
+pub struct CapturedFrame<'a> {
+    pub texture: ID3D11Texture2D,
+    dupl: &'a IDXGIOutputDuplication,
+}
+
+impl<'a> Drop for CapturedFrame<'a> {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = self.dupl.ReleaseFrame();
+        }
+    }
+}
+
 pub struct DXGICapture {
-    _device: ID3D11Device,
-    _context: ID3D11DeviceContext,
+    pub _device: ID3D11Device,
+    pub _context: ID3D11DeviceContext,
     dupl: IDXGIOutputDuplication,
 }
 
@@ -41,24 +54,53 @@ impl DXGICapture {
         }
     }
 
-    pub fn capture_frame(&self) -> Result<ID3D11Texture2D> {
+    pub fn capture_frame(&self) -> Result<CapturedFrame<'_>> {
         unsafe {
             let mut frame_info = DXGI_OUTDUPL_FRAME_INFO::default();
             let mut resource = None;
 
-            // Release previous frame if any (handled by Duplication API naturally on next call usually)
-            // But we must Acquire the first one
             self.dupl.AcquireNextFrame(100, &mut frame_info, &mut resource)?;
 
             let resource = resource.unwrap();
             let texture: ID3D11Texture2D = resource.cast()?;
             
-            // Note: In real implementation, we would copy this to a staging texture
-            // to access from CPU, or pass directly to Media Foundation Encoder on GPU.
-            
-            self.dupl.ReleaseFrame()?;
-            
-            Ok(texture)
+            Ok(CapturedFrame { texture, dupl: &self.dupl })
+        }
+    }
+
+    pub fn get_texture_bytes(&self, texture: &ID3D11Texture2D) -> Result<Vec<u8>> {
+        unsafe {
+            let mut desc = D3D11_TEXTURE2D_DESC::default();
+            texture.GetDesc(&mut desc);
+
+            desc.Usage = D3D11_USAGE_STAGING;
+            desc.BindFlags = D3D11_BIND_FLAG(0).0 as u32;
+            desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ.0 as u32;
+            desc.MiscFlags = D3D11_RESOURCE_MISC_FLAG(0).0 as u32;
+
+            let mut staging_texture = None;
+            self._device.CreateTexture2D(&desc, None, Some(&mut staging_texture))?;
+            let staging_texture = staging_texture.unwrap();
+
+            self._context.CopyResource(&staging_texture, texture);
+
+            let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
+            self._context.Map(&staging_texture, 0, D3D11_MAP_READ, 0, Some(&mut mapped))?;
+
+            let row_pitch = mapped.RowPitch as usize;
+            let width = desc.Width as usize;
+            let height = desc.Height as usize;
+            let mut bytes = Vec::with_capacity(width * height * 4);
+
+            let data = std::slice::from_raw_parts(mapped.pData as *const u8, row_pitch * height);
+            for y in 0..height {
+                let start = y * row_pitch;
+                let end = start + width * 4;
+                bytes.extend_from_slice(&data[start..end]);
+            }
+
+            self._context.Unmap(&staging_texture, 0);
+            Ok(bytes)
         }
     }
 }

@@ -210,25 +210,62 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                 
                                                                 // Start Stream Loop
                                                                 let mgr_clone = Arc::clone(&webrtc_manager);
-                                                                tokio::spawn(async move {
-                                                                    println!(">>> Starting WebRTC Video Stream Loop");
+                                                                let rt_handle = tokio::runtime::Handle::current();
+                                                                
+                                                                std::thread::spawn(move || {
+                                                                    println!(">>> Starting WebRTC Video Stream Loop (Dedicated Thread)");
                                                                     let capture = DXGICapture::new().expect("DXGI Init Failed");
-                                                                    let encoder = MFEncoder::new().expect("MF Encoder Init Failed");
+                                                                    let encoder = MFEncoder::new(1920, 1080).expect("MF Encoder Init Failed");
                                                                     
                                                                     loop {
-                                                                        let mg = mgr_clone.lock().await;
-                                                                        if mg.is_none() { break; }
-                                                                        let manager = mg.as_ref().unwrap();
-                                                                        
-                                                                        if let Ok(texture) = capture.capture_frame() {
-                                                                            if let Ok(packet) = encoder.encode_frame(&texture) {
+                                                                        let result = rt_handle.block_on(async {
+                                                                            let mg = mgr_clone.lock().await;
+                                                                            if mg.is_none() { return None; }
+                                                                            
+                                                                            // We still need to capture and encode OUTSIDE the lock for performance
+                                                                            // but we can't easily do that if we need the manager.
+                                                                            // Actually, send_video_packet is the only async part.
+                                                                            Some(())
+                                                                        });
+
+                                                                        if result.is_none() { break; }
+
+                                                                        if let Ok(captured) = capture.capture_frame() {
+                                                                            if let Ok(raw_bytes) = capture.get_texture_bytes(&captured.texture) {
+                                                                                // Compress to JPEG using image crate
+                                                                                let img = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(1920, 1080, raw_bytes);
+                                                                                if let Some(img) = img {
+                                                                                    let mut jpg_bytes = Vec::new();
+                                                                                    let mut cursor = Cursor::new(&mut jpg_bytes);
+                                                                                    let _ = img.write_to(&mut cursor, image::ImageFormat::Jpeg);
+
+                                                                                    if !jpg_bytes.is_empty() {
+                                                                                        let _ = rt_handle.block_on(async {
+                                                                                            let mg = mgr_clone.lock().await;
+                                                                                            if let Some(manager) = mg.as_ref() {
+                                                                                                // Send as binary over DataChannel
+                                                                                                let _ = manager.send_data(jpg_bytes).await;
+                                                                                            }
+                                                                                        });
+                                                                                    }
+                                                                                }
+                                                                            }
+
+                                                                            if let Ok(packet) = encoder.encode_frame(&captured.texture) {
                                                                                 if !packet.is_empty() {
-                                                                                    let _ = manager.send_video_packet(packet).await;
+                                                                                    let _ = rt_handle.block_on(async {
+                                                                                        let mg = mgr_clone.lock().await;
+                                                                                        if let Some(manager) = mg.as_ref() {
+                                                                                            let _ = manager.send_video_packet(packet).await;
+                                                                                        }
+                                                                                    });
                                                                                 }
                                                                             }
                                                                         }
-                                                                        tokio::time::sleep(tokio::time::Duration::from_millis(33)).await;
+                                                                        
+                                                                        std::thread::sleep(std::time::Duration::from_millis(30));
                                                                     }
+                                                                    println!(">>> WebRTC Video Stream Loop Ended");
                                                                 });
                                                             },
                                                             Err(e) => println!(">>> Offer Handle Error: {}", e),
