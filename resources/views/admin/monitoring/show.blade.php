@@ -515,14 +515,22 @@
         }
 
         window.togglePlay = () => {
+            const v = getEl('remoteVideo');
             isPlaying = !isPlaying;
+            
+            if (v) {
+                if (isPlaying) v.play();
+                else v.pause();
+            }
+
             document.getElementById('playerWrapper').classList.toggle('paused', !isPlaying);
             document.getElementById('playIcon').className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
             sendControlAction(isPlaying ? 'start_capture' : 'stop_capture');
         };
 
         window.sendControlAction = (action) => {
-            log(`Action: ${action}`, 'info');
+            console.log(`Sending Control Action: ${action}`);
+            log(`Action Sent: ${action}`, 'info');
             sendSignal({ action: action }, 'control');
         };
 

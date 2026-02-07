@@ -1,0 +1,52 @@
+    Blocking waiting for file lock on build directory
+   Compiling asadvanceit-agent v1.0.0 (F:\Xampp\htdocs\asadvanceit\agent-app\src-tauri)
+warning: unused import: `windows::Win32::System::Variant::*`
+ --> src\encoder.rs:4:5
+  |
+4 | use windows::Win32::System::Variant::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unnecessary `unsafe` block
+  --> src\encoder.rs:73:17
+   |
+15 |         unsafe {
+   |         ------ because it's nested under this `unsafe` block
+...
+73 |                 unsafe {
+   |                 ^^^^^^ unnecessary `unsafe` block
+   |
+   = note: `#[warn(unused_unsafe)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `staging_texture` is never read
+  --> src\dxgi.rs:24:5
+   |
+20 | pub struct DXGICapture {
+   |            ----------- field in this struct
+...
+24 |     staging_texture: ID3D11Texture2D,
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `get_texture_bytes` is never used
+  --> src\dxgi.rs:96:12
+   |
+27 | impl DXGICapture {
+   | ---------------- method in this implementation
+...
+96 |     pub fn get_texture_bytes(&self, texture: &ID3D11Texture2D) -> Result<Vec<u8>> {
+   |            ^^^^^^^^^^^^^^^^^
+
+warning: method `send_data` is never used
+   --> src\webrtc_manager.rs:100:18
+    |
+ 19 | impl WebRTCManager {
+    | ------------------ method in this implementation
+...
+100 |     pub async fn send_data(&self, buffer: Vec<u8>) -> webrtc::error::Result<()> {
+    |                  ^^^^^^^^^
+
+warning: `asadvanceit-agent` (bin "asadvanceit-agent") generated 5 warnings (run `cargo fix --bin "asadvanceit-agent" -p asadvanceit-agent` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.79s

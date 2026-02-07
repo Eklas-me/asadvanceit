@@ -12,6 +12,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 static WEBRTC_ACTIVE: AtomicBool = AtomicBool::new(false);
+static WEBRTC_PAUSED: AtomicBool = AtomicBool::new(false);
 
 mod dxgi;
 mod encoder;
@@ -119,11 +120,13 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                 "ram_total": sys.total_memory()
             });
 
-            // 2. Logic: Only capture image if WebRTC is NOT active
+            // 2. Logic: Only capture image if WebRTC is NOT active AND NOT paused
             let is_webrtc_active = WEBRTC_ACTIVE.load(Ordering::Relaxed);
+            let is_webrtc_paused = WEBRTC_PAUSED.load(Ordering::Relaxed);
             let mut image_b64 = String::new();
 
-            if !is_webrtc_active {
+            // Only capture JPEGs if no high-speed stream is running or if the user is just monitoring in background
+            if !is_webrtc_active && !is_webrtc_paused {
                 let screens = screenshots::Screen::all().unwrap_or_default();
                 if let Some(screen) = screens.first() {
                     if let Ok(image) = screen.capture() {
@@ -159,8 +162,10 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                 println!(">>> Stream Upload Error: {}", e);
             }
 
-            // Sleep: 2s if WebRTC active, 1s if restricted
-            let sleep_ms = if is_webrtc_active { 2000 } else { 33 };
+            // Sleep: 
+            // - 2s if WebRTC active or paused (saving network)
+            // - 1s (1000ms) if in pure background monitoring mode (prevent hammering at 33ms)
+            let sleep_ms = if is_webrtc_active || is_webrtc_paused { 2000 } else { 1000 };
             tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
         }
     });
@@ -200,8 +205,16 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                 Ok(tokio_tungstenite::tungstenite::Message::Text(text)) => {
                                     if let Ok(data) = serde_json::from_str::<serde_json::Value>(&text) {
                                         let event = data["event"].as_str().unwrap_or("");
+                                        // println!(">>> Received Event: {} on channel {}", event, data["channel"].as_str().unwrap_or(""));
+
                                         if event == "webrtc.signal" {
-                                            let signal_data = data["data"].as_str().map(|s| serde_json::from_str::<serde_json::Value>(s).unwrap_or_default()).unwrap_or_default();
+                                            let raw_data = &data["data"];
+                                            let signal_data = if raw_data.is_string() {
+                                                serde_json::from_str::<serde_json::Value>(raw_data.as_str().unwrap()).unwrap_or_default()
+                                            } else {
+                                                raw_data.clone()
+                                            };
+                                            
                                             let sig_type = signal_data["type"].as_str().unwrap_or("");
                                             
                                             if sig_type == "offer" {
@@ -238,8 +251,8 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                             Some(())
                                                                         });
 
-                                                                        if result.is_none() { 
-                                                                            std::thread::sleep(std::time::Duration::from_millis(10));
+                                                                        if result.is_none() || WEBRTC_PAUSED.load(Ordering::Relaxed) { 
+                                                                            std::thread::sleep(std::time::Duration::from_millis(100)); // Sleep more when paused
                                                                             continue; 
                                                                         }
 
@@ -257,10 +270,6 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                                     });
                                                                                 }
                                                                             }
-
-                                                                            // Minimal DataChannel path (only every 10th frame or so for high-quality snapshot)
-                                                                            // This avoids the CPU-heavy resize/jpeg path every 30ms.
-                                                                            // For now, let's keep it disabled or very throttled to ensure "AnyDesk" speed.
                                                                         }
                                                                         
                                                                         // Target ~30 FPS (33ms)
@@ -268,7 +277,6 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                         let sleep_dur = if elapsed < 33 { 33 - elapsed } else { 1 };
                                                                         std::thread::sleep(std::time::Duration::from_millis(sleep_dur));
                                                                     }
-                                                                    // println!(">>> WebRTC Video Stream Loop Ended");
                                                                 });
                                                             },
                                                             Err(e) => println!(">>> Offer Handle Error: {}", e),
@@ -281,6 +289,28 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                 if let Some(manager) = mg.as_ref() {
                                                     let cand = serde_json::from_value(signal_data["candidate"].clone()).unwrap_or_default();
                                                     let _ = manager.add_ice_candidate(cand).await;
+                                                }
+                                            }
+                                        } else if event == "control" {
+                                            let raw_data = &data["data"];
+                                            let control_data = if raw_data.is_string() {
+                                                serde_json::from_str::<serde_json::Value>(raw_data.as_str().unwrap()).unwrap_or_default()
+                                            } else {
+                                                raw_data.clone()
+                                            };
+
+                                            if let Some(action) = control_data["action"].as_str() {
+                                                println!(">>> Received Control Action: {}", action);
+                                                match action {
+                                                    "stop_capture" => {
+                                                        println!(">>> PAUSING STREAM");
+                                                        WEBRTC_PAUSED.store(true, Ordering::Relaxed);
+                                                    },
+                                                    "start_capture" => {
+                                                        println!(">>> RESUMING STREAM");
+                                                        WEBRTC_PAUSED.store(false, Ordering::Relaxed);
+                                                    },
+                                                    _ => {}
                                                 }
                                             }
                                         }
