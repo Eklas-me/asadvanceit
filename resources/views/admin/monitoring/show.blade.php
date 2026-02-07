@@ -131,9 +131,17 @@
         }
 
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
 
         .paused-overlay {
@@ -194,8 +202,10 @@
                     </div>
 
                     <!-- Video/Image Elements -->
-                    <video id="remoteVideo" autoplay playsinline class="w-100 h-100" style="display: none; object-fit: contain;"></video>
-                    <img id="stream-image" src="" alt="Live Stream" class="img-fluid" style="display: none; width: 100%; height: 100%; object-fit: contain;">
+                    <video id="remoteVideo" autoplay playsinline class="w-100 h-100"
+                        style="display: none; object-fit: contain;"></video>
+                    <img id="stream-image" src="" alt="Live Stream" class="img-fluid"
+                        style="display: none; width: 100%; height: 100%; object-fit: contain;">
 
                     <!-- Loading State -->
                     <div id="loading-text" class="text-center text-white">
@@ -236,9 +246,12 @@
             <div class="card bg-dark text-white border-secondary mt-4">
                 <div class="card-header border-secondary d-flex justify-content-between align-items-center">
                     <span>WebRTC Debug Log</span>
-                    <button class="btn btn-sm btn-outline-light" onclick="document.getElementById('debug-log').innerHTML=''">Clear</button>
+                    <button class="btn btn-sm btn-outline-light"
+                        onclick="document.getElementById('debug-log').innerHTML=''">Clear</button>
                 </div>
-                <div class="card-body" style="height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; background: #0a0a0f;" id="debug-log">
+                <div class="card-body"
+                    style="height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; background: #0a0a0f;"
+                    id="debug-log">
                     <!-- Logs will appear here -->
                 </div>
             </div>
@@ -272,7 +285,8 @@
                 <div class="stat-card mt-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
                         <div class="flex-shrink-0">
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle"
+                                style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
                                 <i class="fas fa-desktop text-primary"></i>
                             </div>
                         </div>
@@ -283,7 +297,8 @@
                     </div>
                     <div class="pt-2 border-top border-secondary">
                         <small class="text-muted d-block mb-1">Hardware ID</small>
-                        <div class="text-white-50 font-monospace" style="font-size: 0.75rem; word-break: break-all;">{{ $device->hardware_id }}</div>
+                        <div class="text-white-50 font-monospace" style="font-size: 0.75rem; word-break: break-all;">
+                            {{ $device->hardware_id }}</div>
                     </div>
                 </div>
 
@@ -304,7 +319,20 @@
     <script type="module">
         const hwid = "{{ $device->hardware_id }}";
         const agentControlChannel = `device-control.${hwid}`;
-        
+
+        // Channel names for dual subscription
+        const deviceChannelName = `agent-monitor.device.${hwid}`;
+        const userChannelName = "{{ $device->user ? 'agent-monitor.user.' . $device->user->id : '' }}";
+
+        // Element references
+        const videoEl = document.getElementById('remoteVideo');
+        const imgEl = document.getElementById('stream-image');
+        const loadingEl = document.getElementById('loading-text');
+        const cpuStat = document.getElementById('cpu-stat');
+        const cpuBar = document.getElementById('cpu-bar');
+        const ramStat = document.getElementById('ram-stat');
+        const ramBar = document.getElementById('ram-bar');
+
         let pc = null;
         let isPlaying = true;
         let activeDataChannel = null;
@@ -321,7 +349,9 @@
 
         async function startWebRTC() {
             log('Initializing WebRTC PeerConnection...', 'info');
-            if (pc) pc.close();
+            if (pc) {
+                try { pc.close(); } catch (e) { }
+            }
 
             pc = new RTCPeerConnection({
                 iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -365,20 +395,17 @@
                 activeDataChannel = dc;
                 document.getElementById('streamStatus').textContent = 'Live Streaming Ready';
             };
-            
+
             dc.onmessage = (event) => {
                 if (!isPlaying) return;
-                
+
                 const blob = new Blob([event.data], { type: 'image/jpeg' });
                 const url = URL.createObjectURL(blob);
-                
-                const imgEl = document.getElementById('stream-image');
-                const loadingEl = document.getElementById('loading-text');
-                
+
                 imgEl.src = url;
                 imgEl.style.display = 'block';
                 loadingEl.style.display = 'none';
-                
+
                 imgEl.onload = () => URL.revokeObjectURL(url);
             };
         }
@@ -387,7 +414,7 @@
             try {
                 await fetch('/api/agent/signal', {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
@@ -402,7 +429,7 @@
             }
         }
 
-        window.togglePlay = function() {
+        window.togglePlay = function () {
             if (isPlaying) {
                 isPlaying = false;
                 document.getElementById('playerWrapper').classList.add('paused');
@@ -416,12 +443,12 @@
             }
         };
 
-        window.sendControlAction = function(action) {
+        window.sendControlAction = function (action) {
             log(`Sending Control Action: ${action}`, 'info');
             sendSignal({ action: action }, 'control');
         };
 
-        window.toggleFullscreen = function() {
+        window.toggleFullscreen = function () {
             const el = document.getElementById('playerWrapper');
             if (!document.fullscreenElement) {
                 el.requestFullscreen();
@@ -430,44 +457,56 @@
             }
         };
 
+        function setupListeners(channel) {
+            channel.listen('.agent.data', (e) => {
+                if (e.stats) updateStats(e.stats);
+                // Legacy Fallback
+                if (e.screenImage && loadingEl.style.display !== 'none') {
+                    imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
+                    imgEl.style.display = 'block';
+                    loadingEl.style.display = 'none';
+                }
+            });
+
+            channel.listen('.webrtc.signal', async (data) => {
+                log(`Received Signal: ${data.type}`, 'info');
+                if (data.type === 'answer' && pc) {
+                    try {
+                        log('Setting Remote Description (Answer)...', 'info');
+                        let sdp = data.sdp;
+                        if (sdp) {
+                            sdp = sdp.split('\n').map(l => l.trim()).join('\r\n') + '\r\n';
+                        }
+                        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sdp }));
+                    } catch (err) {
+                        log('SDP Answer Error: ' + err.message, 'error');
+                    }
+                } else if (data.type === 'candidate' && pc) {
+                    try {
+                        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    } catch (err) {
+                        log('ICE Candidate Error: ' + err.message, 'error');
+                    }
+                }
+            });
+        }
+
         const checkEcho = setInterval(() => {
             if (window.Echo) {
                 clearInterval(checkEcho);
                 log('Echo initialized successfully', 'success');
-                
-                const channel = window.Echo.private(`agent-monitor.device.${hwid}`);
-                
-                channel.listen('.agent.data', (e) => {
-                    if (e.stats) updateStats(e.stats);
-                    // Legacy Fallback
-                    if (e.screenImage && loadingEl.style.display !== 'none') {
-                        imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
-                        imgEl.style.display = 'block';
-                        loadingEl.style.display = 'none';
-                    }
-                });
 
-                channel.listen('.webrtc.signal', async (data) => {
-                    log(`Received Signal: ${data.type}`, 'info');
-                    if (data.type === 'answer' && pc) {
-                        try {
-                            log('Setting Remote Description (Answer)...', 'info');
-                            let sdp = data.sdp;
-                            if (sdp) {
-                                sdp = sdp.split('\n').map(l => l.trim()).join('\r\n') + '\r\n';
-                            }
-                            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sdp }));
-                        } catch (err) {
-                            log('SDP Answer Error: ' + err.message, 'error');
-                        }
-                    } else if (data.type === 'candidate' && pc) {
-                        try {
-                            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-                        } catch (err) {
-                            log('ICE Candidate Error: ' + err.message, 'error');
-                        }
-                    }
-                });
+                // Subscribe to device channel (primary for signaling)
+                log(`Subscribing to device channel: ${deviceChannelName}`, 'info');
+                const deviceChannel = window.Echo.private(deviceChannelName);
+                setupListeners(deviceChannel);
+
+                // Subscribe to user channel if exists (often used for stats)
+                if (userChannelName) {
+                    log(`Subscribing to user channel: ${userChannelName}`, 'info');
+                    const userChannel = window.Echo.private(userChannelName);
+                    setupListeners(userChannel);
+                }
 
                 setTimeout(startWebRTC, 1000);
             }
@@ -475,14 +514,14 @@
 
         function updateStats(stats) {
             if (stats.cpu !== undefined) {
-                document.getElementById('cpu-stat').textContent = Math.round(stats.cpu) + '%';
-                document.getElementById('cpu-bar').style.width = Math.round(stats.cpu) + '%';
+                cpuStat.textContent = Math.round(stats.cpu) + '%';
+                cpuBar.style.width = Math.round(stats.cpu) + '%';
             }
             if (stats.ram_used !== undefined && stats.ram_total !== undefined) {
                 const usedGb = (stats.ram_used / (1024 ** 3)).toFixed(1);
                 const totalGb = (stats.ram_total / (1024 ** 3)).toFixed(1);
-                document.getElementById('ram-stat').textContent = `${usedGb} / ${totalGb} GB`;
-                document.getElementById('ram-bar').style.width = (stats.ram_used / stats.ram_total * 100) + '%';
+                ramStat.textContent = `${usedGb} / ${totalGb} GB`;
+                ramBar.style.width = (stats.ram_used / stats.ram_total * 100) + '%';
             }
         }
     </script>
