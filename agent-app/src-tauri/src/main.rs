@@ -10,6 +10,8 @@ use base64::{Engine as _, engine::general_purpose};
 // use windows::Win32::Graphics::Direct3D11::{ID3D11Texture2D, D3D11_TEXTURE2D_DESC};
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+static WEBRTC_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 mod dxgi;
 mod encoder;
@@ -101,9 +103,9 @@ async fn open_browser(url: String) -> Result<(), String> {
 }
 
 fn start_monitoring_background(stream_url: String, token: String, hardware_id: String) {
-    thread::spawn(move || {
+    tokio::spawn(async move {
         println!(">>> Starting monitoring loop to {}", stream_url);
-        let client = reqwest::blocking::Client::new();
+        let client = reqwest::Client::new();
         let mut sys = System::new_all();
         
         loop {
@@ -111,53 +113,55 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
             sys.refresh_cpu();
             sys.refresh_memory();
             
-            let cpu_usage = sys.global_cpu_info().cpu_usage();
-            let ram_used = sys.used_memory();
-            let ram_total = sys.total_memory();
-            
             let stats = json!({
-                "cpu": cpu_usage,
-                "ram_used": ram_used,
-                "ram_total": ram_total
+                "cpu": sys.global_cpu_info().cpu_usage(),
+                "ram_used": sys.used_memory(),
+                "ram_total": sys.total_memory()
             });
 
-            // 2. Capture Screen
+            // 2. Logic: Only capture image if WebRTC is NOT active
+            let is_webrtc_active = WEBRTC_ACTIVE.load(Ordering::Relaxed);
             let mut image_b64 = String::new();
-            let screens = screenshots::Screen::all().unwrap_or_default();
-            if let Some(screen) = screens.first() {
-                if let Ok(image) = screen.capture() {
-                    let dynamic_image = image::DynamicImage::ImageRgba8(image);
-                    let mut buffer = Vec::new();
-                    let mut cursor = Cursor::new(&mut buffer);
-                    // Resize to 720p for HD monitoring since user has good internet
-                    let resized = dynamic_image.thumbnail(1280, 720);
-                    
-                    if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(75)).is_ok() {
-                        image_b64 = general_purpose::STANDARD.encode(&buffer);
+
+            if !is_webrtc_active {
+                let screens = screenshots::Screen::all().unwrap_or_default();
+                if let Some(screen) = screens.first() {
+                    if let Ok(image) = screen.capture() {
+                        let dynamic_image = image::DynamicImage::ImageRgba8(image);
+                        let mut buffer = Vec::new();
+                        let mut cursor = Cursor::new(&mut buffer);
+                        let resized = dynamic_image.thumbnail(1280, 720);
+                        if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(75)).is_ok() {
+                            image_b64 = general_purpose::STANDARD.encode(&buffer);
+                        }
                     }
                 }
             }
 
+            // 3. Prepare Payload
+            let mut payload = json!({
+                "stats": stats,
+                "hardware_id": hardware_id
+            });
+
             if !image_b64.is_empty() {
-                let payload = json!({
-                    "image": image_b64,
-                    "stats": stats,
-                    "hardware_id": hardware_id
-                });
-
-                let res = client.post(&stream_url)
-                    .header("Authorization", format!("Bearer {}", token))
-                    .json(&payload)
-                    .send();
-
-                if let Err(e) = res {
-                    println!(">>> Stream Upload Error: {}", e);
-                }
+                payload["image"] = json!(image_b64);
             }
 
-            // Adjust FPS: 1000ms = 1 FPS for background monitoring to save resources
-            // when not actively being watched. The WebRTC stream will handle high-perf.
-            thread::sleep(Duration::from_millis(1000));
+            // 4. Send non-blocking
+            let res = client.post(&stream_url)
+                .header("Authorization", format!("Bearer {}", token))
+                .json(&payload)
+                .send()
+                .await;
+
+            if let Err(e) = res {
+                println!(">>> Stream Upload Error: {}", e);
+            }
+
+            // Sleep: 2s if WebRTC active, 1s if restricted
+            let sleep_ms = if is_webrtc_active { 2000 } else { 1000 };
+            tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
         }
     });
 }
@@ -207,9 +211,10 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                         let sdp = signal_data["sdp"].as_str().unwrap_or("");
                                                         match manager.handle_offer(sdp).await {
                                                             Ok(answer_sdp) => {
-                                                                send_signal(&base_url_clone, &hwid_clone, json!({ "type": "answer", "sdp": answer_sdp })).await;
+                                                                    send_signal(&base_url_clone, &hwid_clone, json!({ "type": "answer", "sdp": answer_sdp })).await;
                                                                 let mut mg = webrtc_manager.lock().await;
                                                                 *mg = Some(manager);
+                                                                WEBRTC_ACTIVE.store(true, Ordering::Relaxed);
                                                                 
                                                                 // Start Stream Loop
                                                                 let mgr_clone = Arc::clone(&webrtc_manager);

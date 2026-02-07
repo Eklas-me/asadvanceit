@@ -372,15 +372,21 @@
                 if (v) {
                     v.srcObject = e.streams[0];
                     v.style.display = 'block';
+                    v.onplaying = () => {
+                        log('Video Track Playing', 'success');
+                        lastWebRTCFrame = Date.now();
+                        const i = getEl('stream-image');
+                        if (i) i.style.display = 'none';
+                        const l = getEl('loading-text');
+                        if (l) l.style.display = 'none';
+                    };
+                    v.ontimeupdate = () => {
+                        lastWebRTCFrame = Date.now();
+                    };
                 }
 
                 // Apply initial buffering if enabled
                 applyBuffering(e.receiver);
-
-                const i = getEl('stream-image');
-                if (i) i.style.display = 'none';
-                const l = getEl('loading-text');
-                if (l) l.style.display = 'none';
             };
 
             pc.ondatachannel = (e) => {
@@ -402,7 +408,7 @@
 
         // 4. Stream Prioritization
         let lastWebRTCFrame = 0;
-        const WEBRTC_TIMEOUT = 2000; // ms
+        const WEBRTC_TIMEOUT = 5000; // Increased timeout for smooth mode
 
         function setupDC(dc) {
             dc.binaryType = 'arraybuffer';
@@ -415,13 +421,15 @@
                 const i = getEl('stream-image');
                 if (i) {
                     i.src = url;
-                    i.style.display = 'block';
+                    // Only show if video isn't active
+                    const v = getEl('remoteVideo');
+                    if (v && (!v.srcObject || v.paused)) {
+                        i.style.display = 'block';
+                    }
                     i.onload = () => URL.revokeObjectURL(url);
                 }
                 const l = getEl('loading-text');
                 if (l) l.style.display = 'none';
-                const v = getEl('remoteVideo');
-                if (v) v.style.display = 'none';
             };
             dc.onclose = () => log('DataChannel Closed', 'error');
             dc.onerror = (err) => log('DataChannel Error: ' + err.message, 'error');
@@ -446,17 +454,20 @@
                 if (e.stats) updateUIStats(e.stats);
 
                 // Smart Fallback Logic
-                // Only update from legacy stream if WebRTC hasn't sent a frame recently
-                if (e.screenImage && (Date.now() - lastWebRTCFrame > WEBRTC_TIMEOUT)) {
+                // Only update from legacy stream if WebRTC has NOT sent a frame recently
+                const now = Date.now();
+                const isWebRTCAlive = (now - lastWebRTCFrame < WEBRTC_TIMEOUT);
+                
+                if (e.screenImage && !isWebRTCAlive) {
                     const i = getEl('stream-image');
                     const l = getEl('loading-text');
+                    const v = getEl('remoteVideo');
 
                     if (i) {
                         i.src = 'data:image/jpeg;base64,' + e.screenImage;
                         i.style.display = 'block';
                     }
                     if (l) l.style.display = 'none';
-                    const v = getEl('remoteVideo');
                     if (v) v.style.display = 'none';
                 }
             });
