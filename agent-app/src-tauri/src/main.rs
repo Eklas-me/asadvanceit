@@ -160,7 +160,7 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
             }
 
             // Sleep: 2s if WebRTC active, 1s if restricted
-            let sleep_ms = if is_webrtc_active { 2000 } else { 1000 };
+            let sleep_ms = if is_webrtc_active { 2000 } else { 33 };
             tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
         }
     });
