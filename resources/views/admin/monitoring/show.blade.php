@@ -390,10 +390,16 @@
             }
         }
 
+        // 4. Stream Prioritization
+        let lastWebRTCFrame = 0;
+        const WEBRTC_TIMEOUT = 2000; // ms
+
         function setupDC(dc) {
             dc.binaryType = 'arraybuffer';
             dc.onmessage = (e) => {
                 if (!isPlaying) return;
+                lastWebRTCFrame = Date.now();
+
                 const blob = new Blob([e.data], { type: 'image/jpeg' });
                 const url = URL.createObjectURL(blob);
                 const i = getEl('stream-image');
@@ -428,14 +434,20 @@
             log(`Listening on channel: ${name}`, 'info');
             channel.listen('.agent.data', (e) => {
                 if (e.stats) updateUIStats(e.stats);
-                const l = getEl('loading-text');
-                if (e.screenImage && l && l.style.display !== 'none') {
+
+                // Smart Fallback Logic
+                // Only update from legacy stream if WebRTC hasn't sent a frame recently
+                if (e.screenImage && (Date.now() - lastWebRTCFrame > WEBRTC_TIMEOUT)) {
                     const i = getEl('stream-image');
+                    const l = getEl('loading-text');
+
                     if (i) {
                         i.src = 'data:image/jpeg;base64,' + e.screenImage;
                         i.style.display = 'block';
                     }
-                    l.style.display = 'none';
+                    if (l) l.style.display = 'none';
+                    const v = getEl('remoteVideo');
+                    if (v) v.style.display = 'none';
                 }
             });
 
