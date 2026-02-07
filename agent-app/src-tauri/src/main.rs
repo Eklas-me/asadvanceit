@@ -155,8 +155,9 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                 }
             }
 
-            // Adjust FPS: 200ms = 5 FPS for very smooth monitoring
-            thread::sleep(Duration::from_millis(200));
+            // Adjust FPS: 1000ms = 1 FPS for background monitoring to save resources
+            // when not actively being watched. The WebRTC stream will handle high-perf.
+            thread::sleep(Duration::from_millis(1000));
         }
     });
 }
@@ -240,35 +241,7 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                         let frame_start = std::time::Instant::now();
                                                                         
                                                                         if let Ok(captured) = capture.capture_frame() {
-                                                                            if let Ok(raw_bytes) = capture.get_texture_bytes(&captured.texture) {
-                                                                                let mut desc = D3D11_TEXTURE2D_DESC::default();
-                                                                                unsafe { captured.texture.GetDesc(&mut desc) };
-                                                                                let (w, h) = (desc.Width, desc.Height);
-
-                                                                                // High speed Resize + JPEG
-                                                                                let img = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(w, h, raw_bytes);
-                                                                                if let Some(img) = img {
-                                                                                    // Nearest neighbor resize is the fastest
-                                                                                    let resized = image::imageops::resize(&img, 1280, 720, image::imageops::FilterType::Nearest);
-                                                                                    
-                                                                                    let mut jpg_bytes = Vec::new();
-                                                                                    let mut cursor = Cursor::new(&mut jpg_bytes);
-                                                                                    
-                                                                                    // Use JpegEncoder for better quality/speed control
-                                                                                    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor, 60);
-                                                                                    let _ = encoder.encode(&resized, 1280, 720, image::ColorType::Rgba8);
-
-                                                                                    if !jpg_bytes.is_empty() {
-                                                                                        let _ = rt_handle.block_on(async {
-                                                                                            let mg = mgr_clone.lock().await;
-                                                                                            if let Some(manager) = mg.as_ref() {
-                                                                                                let _ = manager.send_data(jpg_bytes).await;
-                                                                                            }
-                                                                                        });
-                                                                                    }
-                                                                                }
-                                                                            }
-
+                                                                            // Hardware H.264 Encoding Path (The "AnyDesk" way)
                                                                             if let Ok(packet) = encoder.encode_frame(&captured.texture) {
                                                                                 if !packet.is_empty() {
                                                                                     let _ = rt_handle.block_on(async {
@@ -279,8 +252,13 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                                     });
                                                                                 }
                                                                             }
+
+                                                                            // Minimal DataChannel path (only every 10th frame or so for high-quality snapshot)
+                                                                            // This avoids the CPU-heavy resize/jpeg path every 30ms.
+                                                                            // For now, let's keep it disabled or very throttled to ensure "AnyDesk" speed.
                                                                         }
                                                                         
+                                                                        // Target ~30 FPS
                                                                         std::thread::sleep(std::time::Duration::from_millis(30));
                                                                     }
                                                                     println!(">>> WebRTC Video Stream Loop Ended");

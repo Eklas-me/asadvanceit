@@ -85,26 +85,52 @@ impl MFEncoder {
         }
     }
 
-    pub fn encode_frame(&self, _texture: &ID3D11Texture2D) -> Result<Vec<u8>> {
+    pub fn encode_frame(&self, texture: &ID3D11Texture2D) -> Result<Vec<u8>> {
         unsafe {
-            // 1. Create Media Buffer from Texture
-            // In a real high-perf app, we'd use MFCreateDXGISurfaceBuffer.
-            // For now, we'll return a fake-but-valid-looking H.264 stream start if we can't do full MFT.
-            // Actually, let's try to trigger a ProcessMessage to keep the encoder alive.
-            let _ = self.encoder.ProcessMessage(MFT_MESSAGE_COMMAND_TICK, 0);
-            
-            // To truly get 30 FPS, we need to send real NALUs.
-            // Since the full implementation is very large, I will provide a 
-            // highly optimized "Black Frame" H.264 stream if real encoding fails,
-            // but I'll add the structure for real encoding.
-            
-            // Placeholder: Returning a small valid H.264 packet (SPS/PPS)
-            // This will make the video element "start" even if it's just a black/frozen frame
-            // so the user knows WebRTC is working.
-            Ok(vec![
-                0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x1f, 0x95, 0xa0, 0x50, 0x05, 0xbb, 0x01, 0x10, 0x00, 0x00, 0x03, 0x00, 0x10, 0x00, 0x00, 0x03, 0x03, 0x20, 0xf1, 0x42, 0x99, 0x60, // SPS
-                0x00, 0x00, 0x00, 0x01, 0x68, 0xce, 0x3c, 0x80 // PPS
-            ])
+            // 1. Create Media Buffer from Texture (Zero Copy)
+            let mut buffer: Option<IMFMediaBuffer> = None;
+            MFCreateDXGISurfaceBuffer(&ID3D11Texture2D::IID, texture, 0, false, &mut buffer)?;
+            let buffer = buffer.unwrap();
+
+            // 2. Create Sample
+            let mut sample: Option<IMFSample> = None;
+            MFCreateSample(&mut sample)?;
+            let sample = sample.unwrap();
+            sample.AddBuffer(&buffer)?;
+
+            // 3. Process Input
+            self.encoder.ProcessInput(0, Some(&sample), 0)?;
+
+            // 4. Process Output
+            let mut output_data = MFT_OUTPUT_DATA_BUFFER::default();
+            output_data.dwStreamID = 0;
+
+            let mut status = 0;
+            let hres = self.encoder.ProcessOutput(0, &mut [output_data.clone()], &mut status);
+
+            if hres.is_err() {
+                // If it needs more input or is busy, return empty rather than erroring the whole loop
+                return Ok(Vec::new());
+            }
+
+            // 5. Extract Bytes from Output Sample
+            if let Some(out_sample) = output_data.pSample {
+                let mut out_buffer: Option<IMFMediaBuffer> = None;
+                out_sample.GetBufferByIndex(0, &mut out_buffer)?;
+                let out_buffer = out_buffer.unwrap();
+
+                let mut p_data: *mut u8 = std::ptr::null_mut();
+                let mut current_len = 0;
+                let mut max_len = 0;
+                out_buffer.Lock(&mut p_data, Some(&mut max_len), Some(&mut current_len))?;
+
+                let bytes = std::slice::from_raw_parts(p_data, current_len as usize).to_vec();
+                out_buffer.Unlock()?;
+
+                return Ok(bytes);
+            }
+
+            Ok(Vec::new())
         }
     }
 }
