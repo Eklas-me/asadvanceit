@@ -14,3 +14,7 @@ Broadcast::channel('agent-monitor.{type}.{id}', function ($user, $type, $id) {
     // Only admins can monitor
     return $user->role === 'admin' || $user->isAdmin();
 });
+
+Broadcast::channel('device-control.{hwid}', function () {
+    return true; // Agent is not a Laravel User, so we permit it based on HWID (signaling security handled by endpoint)
+});

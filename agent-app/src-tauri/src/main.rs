@@ -5,8 +5,17 @@ use std::io::Cursor;
 use std::thread;
 use std::time::Duration;
 use sysinfo::System;
-// use url::Url; // Removed unused
 use base64::{Engine as _, engine::general_purpose};
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
+mod dxgi;
+mod encoder;
+mod webrtc_manager;
+
+use webrtc_manager::WebRTCManager;
+use dxgi::DXGICapture;
+use encoder::MFEncoder;
 
 #[derive(Serialize, Deserialize)]
 struct LoginResponse {
@@ -118,10 +127,10 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                     let dynamic_image = image::DynamicImage::ImageRgba8(image);
                     let mut buffer = Vec::new();
                     let mut cursor = Cursor::new(&mut buffer);
-                    // Resize to smaller size for much faster transmission and smoothness
-                    let resized = dynamic_image.thumbnail(640, 480);
+                    // Resize to 720p for HD monitoring since user has good internet
+                    let resized = dynamic_image.thumbnail(1280, 720);
                     
-                    if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(60)).is_ok() {
+                    if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(75)).is_ok() {
                         image_b64 = general_purpose::STANDARD.encode(&buffer);
                     }
                 }
@@ -150,8 +159,130 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
     });
 }
 
+fn start_signaling_background(hwid: String, base_url: String) {
+    thread::spawn(move || {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            println!(">>> Starting Signaling WebSocket for HWID: {}", hwid);
+            let ws_url = format!("wss://test.asadvanceit.com/app/reverb_app_key?protocol=7&client=js&version=8.4.0-rc2&flash=false");
+            
+            let webrtc_manager: Arc<Mutex<Option<WebRTCManager>>> = Arc::new(Mutex::new(None));
+            let hwid_clone = hwid.clone();
+            let base_url_clone = base_url.clone();
+
+            loop {
+                match tokio_tungstenite::connect_async(&ws_url).await {
+                    Ok((mut ws_stream, _)) => {
+                        println!(">>> Connected to Signaling Server");
+                        
+                        let subscribe_msg = json!({
+                            "event": "pusher:subscribe",
+                            "data": { "channel": format!("device-control.{}", hwid) }
+                        });
+                        
+                        use futures_util::SinkExt;
+                        use futures_util::StreamExt;
+                        
+                        if let Err(e) = ws_stream.send(tokio_tungstenite::tungstenite::Message::Text(subscribe_msg.to_string().into())).await {
+                            println!(">>> Subscription Error: {}", e);
+                            continue;
+                        }
+                        
+                        while let Some(msg) = ws_stream.next().await {
+                            match msg {
+                                Ok(tokio_tungstenite::tungstenite::Message::Text(text)) => {
+                                    if let Ok(data) = serde_json::from_str::<serde_json::Value>(&text) {
+                                        let event = data["event"].as_str().unwrap_or("");
+                                        if event == "webrtc.signal" {
+                                            let signal_data = data["data"].as_str().map(|s| serde_json::from_str::<serde_json::Value>(s).unwrap_or_default()).unwrap_or_default();
+                                            let sig_type = signal_data["type"].as_str().unwrap_or("");
+                                            
+                                            if sig_type == "offer" {
+                                                println!(">>> Received WebRTC Offer");
+                                                match WebRTCManager::new().await {
+                                                    Ok(manager) => {
+                                                        let sdp = signal_data["sdp"].as_str().unwrap_or("");
+                                                        match manager.handle_offer(sdp).await {
+                                                            Ok(answer_sdp) => {
+                                                                send_signal(&base_url_clone, &hwid_clone, json!({ "type": "answer", "sdp": answer_sdp })).await;
+                                                                let mut mg = webrtc_manager.lock().await;
+                                                                *mg = Some(manager);
+                                                                
+                                                                // Start Stream Loop
+                                                                let mgr_clone = Arc::clone(&webrtc_manager);
+                                                                tokio::spawn(async move {
+                                                                    println!(">>> Starting WebRTC Video Stream Loop");
+                                                                    let capture = DXGICapture::new().expect("DXGI Init Failed");
+                                                                    let encoder = MFEncoder::new().expect("MF Encoder Init Failed");
+                                                                    
+                                                                    loop {
+                                                                        let mg = mgr_clone.lock().await;
+                                                                        if mg.is_none() { break; }
+                                                                        let manager = mg.as_ref().unwrap();
+                                                                        
+                                                                        if let Ok(texture) = capture.capture_frame() {
+                                                                            if let Ok(packet) = encoder.encode_frame(&texture) {
+                                                                                if !packet.is_empty() {
+                                                                                    let _ = manager.send_video_packet(packet).await;
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        tokio::time::sleep(tokio::time::Duration::from_millis(33)).await;
+                                                                    }
+                                                                });
+                                                            },
+                                                            Err(e) => println!(">>> Offer Handle Error: {}", e),
+                                                        }
+                                                    },
+                                                    Err(e) => println!(">>> WebRTC Manager Init Error: {}", e),
+                                                }
+                                            } else if sig_type == "candidate" {
+                                                let mut mg = webrtc_manager.lock().await;
+                                                if let Some(manager) = mg.as_ref() {
+                                                    let cand = serde_json::from_value(signal_data["candidate"].clone()).unwrap_or_default();
+                                                    let _ = manager.add_ice_candidate(cand).await;
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                Ok(_) => {},
+                                Err(e) => { println!(">>> WS Read Error: {}", e); break; }
+                            }
+                        }
+                    },
+                    Err(e) => {
+                        println!(">>> WS Connect Error: {}, retrying...", e);
+                        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                    }
+                }
+            }
+        });
+    });
+}
+
+async fn send_signal(base_url: &str, hwid: &str, payload: serde_json::Value) {
+    let client = reqwest::Client::new();
+    let url = format!("{}/api/agent/signal", base_url);
+    let target_channel = format!("agent-monitor.device.{}", hwid);
+    
+    let _ = client.post(&url)
+        .json(&json!({
+            "payload": payload,
+            "target_channel": target_channel
+        }))
+        .send()
+        .await;
+}
+
 fn main() {
     tauri::Builder::default()
+        .setup(|_app| {
+            // Start Signaling in Background
+            let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
+            start_signaling_background(hwid, "https://test.asadvanceit.com".to_string());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             login,
             open_browser,

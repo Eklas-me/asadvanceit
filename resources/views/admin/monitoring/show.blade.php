@@ -107,10 +107,11 @@
         </div>
 
         <div class="stream-wrapper">
+            <video id="remoteVideo" autoplay playsinline class="w-100 h-100" style="display: none; background: #000;"></video>
             <img id="stream-image" src="" alt="Live Stream" class="img-fluid" style="display: none; width: 100%;">
             <div id="loading-text" class="text-center p-5">
                 <div class="spinner-border text-primary mb-3" role="status"></div>
-                <p class="text-muted">Waiting for agent to broadcast screen...</p>
+                <p class="text-muted">Establishing secure WebRTC connection...</p>
             </div>
         </div>
 
@@ -134,39 +135,105 @@
 @push('scripts')
     <script type="module">
         const channelId = "{{ $device->user ? 'user.' . $device->user->id : 'device.' . $device->hardware_id }}";
+        const hwid = "{{ $device->hardware_id }}";
+        const agentControlChannel = `device-control.${hwid}`;
 
         document.addEventListener('DOMContentLoaded', () => {
+            const videoEl = document.getElementById('remoteVideo');
             const imgEl = document.getElementById('stream-image');
             const loadingEl = document.getElementById('loading-text');
+
+            let pc = null;
+
+            async function startWebRTC() {
+                console.log('Starting WebRTC connection...');
+                pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        sendSignal({ type: 'candidate', candidate: event.candidate });
+                    }
+                };
+
+                pc.ontrack = (event) => {
+                    console.log('Received remote track');
+                    videoEl.srcObject = event.streams[0];
+                    videoEl.style.display = 'block';
+                    loadingEl.style.display = 'none';
+                    imgEl.style.display = 'none';
+                };
+
+                const offer = await pc.createOffer({
+                    offerToReceiveVideo: true,
+                    offerToReceiveAudio: false
+                });
+                await pc.setLocalDescription(offer);
+
+                sendSignal({ type: 'offer', sdp: offer.sdp });
+            }
+
+            async function sendSignal(payload) {
+                try {
+                    await fetch('/api/agent/signal', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            payload: payload,
+                            target_channel: agentControlChannel
+                        })
+                    });
+                } catch (e) {
+                    console.error('Signal failed', e);
+                }
+            }
 
             const initEcho = setInterval(() => {
                 if (window.Echo) {
                     clearInterval(initEcho);
                     console.log('Echo initialized. Subscribing to: ' + channelId);
 
-                    window.Echo.private(`agent-monitor.${channelId}`)
-                        .listen('.agent.data', (e) => {
-                            console.log('Data received');
-                            
-                            if (e.screenImage) {
-                                imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
-                                imgEl.style.display = 'block';
-                                loadingEl.style.display = 'none';
-                            }
+                    const channel = window.Echo.private(`agent-monitor.${channelId}`);
+                    
+                    // Legacy Image Stream (Fallback)
+                    channel.listen('.agent.data', (e) => {
+                        if (e.screenImage && videoEl.style.display === 'none') {
+                            imgEl.src = 'data:image/jpeg;base64,' + e.screenImage;
+                            imgEl.style.display = 'block';
+                            loadingEl.style.display = 'none';
+                        }
+                        updateStats(e.stats);
+                    });
 
-                            if (e.stats) {
-                                if (e.stats.cpu !== undefined) {
-                                    document.getElementById('cpu-stat').textContent = Math.round(e.stats.cpu) + '%';
-                                }
-                                if (e.stats.ram_used !== undefined && e.stats.ram_total !== undefined) {
-                                    const usedGb = (e.stats.ram_used / (1024 * 1024 * 1024)).toFixed(1);
-                                    const totalGb = (e.stats.ram_total / (1024 * 1024 * 1024)).toFixed(1);
-                                    document.getElementById('ram-stat').textContent = `${usedGb} / ${totalGb} GB`;
-                                }
-                            }
-                        });
+                    // WebRTC Signaling
+                    channel.listen('.webrtc.signal', async (data) => {
+                        console.log('Received signal from agent:', data);
+                        if (!pc) return;
+
+                        if (data.type === 'answer') {
+                            await pc.setRemoteDescription(new RTCSessionDescription(data));
+                        } else if (data.type === 'candidate' && data.candidate) {
+                            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                        }
+                    });
+
+                    // Start WebRTC handover
+                    startWebRTC();
                 }
             }, 500);
+
+            function updateStats(stats) {
+                if (!stats) return;
+                if (stats.cpu !== undefined) {
+                    document.getElementById('cpu-stat').textContent = Math.round(stats.cpu) + '%';
+                }
+                if (stats.ram_used !== undefined && stats.ram_total !== undefined) {
+                    const usedGb = (stats.ram_used / (1024 * 1024 * 1024)).toFixed(1);
+                    const totalGb = (stats.ram_total / (1024 * 1024 * 1024)).toFixed(1);
+                    document.getElementById('ram-stat').textContent = `${usedGb} / ${totalGb} GB`;
+                }
+            }
         });
     </script>
 @endpush
