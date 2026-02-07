@@ -1,0 +1,33 @@
+    Blocking waiting for file lock on build directory
+   Compiling asadvanceit-agent v1.0.0 (F:\Xampp\htdocs\asadvanceit\agent-app\src-tauri)
+warning: field `staging_texture` is never read
+  --> src\dxgi.rs:24:5
+   |
+20 | pub struct DXGICapture {
+   |            ----------- field in this struct
+...
+24 |     staging_texture: ID3D11Texture2D,
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `get_texture_bytes` is never used
+  --> src\dxgi.rs:96:12
+   |
+27 | impl DXGICapture {
+   | ---------------- method in this implementation
+...
+96 |     pub fn get_texture_bytes(&self, texture: &ID3D11Texture2D) -> Result<Vec<u8>> {
+   |            ^^^^^^^^^^^^^^^^^
+
+warning: method `send_data` is never used
+   --> src\webrtc_manager.rs:100:18
+    |
+ 19 | impl WebRTCManager {
+    | ------------------ method in this implementation
+...
+100 |     pub async fn send_data(&self, buffer: Vec<u8>) -> webrtc::error::Result<()> {
+    |                  ^^^^^^^^^
+
+warning: `asadvanceit-agent` (bin "asadvanceit-agent") generated 3 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14.10s

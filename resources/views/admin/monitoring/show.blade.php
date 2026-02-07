@@ -234,6 +234,12 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-3">
+                            <!-- Smoothness Toggle -->
+                            <div class="form-check form-switch me-3">
+                                <input class="form-check-input" type="checkbox" id="smoothToggle"
+                                    onchange="toggleSmoothMode()">
+                                <label class="form-check-label text-white-50 small" for="smoothToggle">Smooth Mode</label>
+                            </div>
                             <button class="play-pause-btn" onclick="toggleFullscreen()" title="Fullscreen">
                                 <i class="fas fa-expand"></i>
                             </button>
@@ -367,6 +373,10 @@
                     v.srcObject = e.streams[0];
                     v.style.display = 'block';
                 }
+
+                // Apply initial buffering if enabled
+                applyBuffering(e.receiver);
+
                 const i = getEl('stream-image');
                 if (i) i.style.display = 'none';
                 const l = getEl('loading-text');
@@ -510,5 +520,35 @@
             if (!document.fullscreenElement) p.requestFullscreen();
             else document.exitFullscreen();
         };
+
+        window.toggleSmoothMode = () => {
+            const isSmooth = document.getElementById('smoothToggle').checked;
+            log(`Smooth Mode: ${isSmooth ? 'ENABLED (5s Buffer)' : 'DISABLED (Real-time)'}`, 'info');
+
+            if (pc) {
+                pc.getReceivers().forEach(receiver => {
+                    applyBuffering(receiver);
+                });
+            }
+
+            const statusEl = getEl('streamStatus');
+            if (statusEl) {
+                statusEl.textContent = isSmooth ? 'Connected (Smooth Mode - 5s Delay)' : 'Connected (Real-time Mode)';
+            }
+        };
+
+        function applyBuffering(receiver) {
+            if (receiver.track && receiver.track.kind === 'video') {
+                const isSmooth = document.getElementById('smoothToggle').checked;
+                // playoutDelayHint is supported in Chrome/Edge to introduce artificial delay
+                // Value is in seconds.
+                if ('playoutDelayHint' in receiver) {
+                    receiver.playoutDelayHint = isSmooth ? 5.0 : 0.0;
+                    log(`Jitter Buffer set to: ${receiver.playoutDelayHint}s`, 'success');
+                } else {
+                    log('playoutDelayHint not supported in this browser', 'warning');
+                }
+            }
+        }
     </script>
 @endpush

@@ -88,14 +88,10 @@ impl MFEncoder {
     pub fn encode_frame(&self, texture: &ID3D11Texture2D) -> Result<Vec<u8>> {
         unsafe {
             // 1. Create Media Buffer from Texture (Zero Copy)
-            let mut buffer: Option<IMFMediaBuffer> = None;
-            MFCreateDXGISurfaceBuffer(&ID3D11Texture2D::IID, texture, 0, false, &mut buffer)?;
-            let buffer = buffer.unwrap();
+            let buffer = MFCreateDXGISurfaceBuffer(&ID3D11Texture2D::IID, texture, 0, false)?;
 
             // 2. Create Sample
-            let mut sample: Option<IMFSample> = None;
-            MFCreateSample(&mut sample)?;
-            let sample = sample.unwrap();
+            let sample = MFCreateSample()?;
             sample.AddBuffer(&buffer)?;
 
             // 3. Process Input
@@ -114,10 +110,8 @@ impl MFEncoder {
             }
 
             // 5. Extract Bytes from Output Sample
-            if let Some(out_sample) = output_data.pSample {
-                let mut out_buffer: Option<IMFMediaBuffer> = None;
-                out_sample.GetBufferByIndex(0, &mut out_buffer)?;
-                let out_buffer = out_buffer.unwrap();
+            if let Some(out_sample) = &*output_data.pSample {
+                let out_buffer = out_sample.GetBufferByIndex(0)?;
 
                 let mut p_data: *mut u8 = std::ptr::null_mut();
                 let mut current_len = 0;
