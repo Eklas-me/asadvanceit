@@ -9,6 +9,7 @@ use sysinfo::System;
 use base64::{Engine as _, engine::general_purpose};
 use windows::Win32::Graphics::Direct3D11::{ID3D11Texture2D, D3D11_TEXTURE2D_DESC};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::Mutex;
 
 mod dxgi;
@@ -121,24 +122,13 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                 "ram_total": ram_total
             });
 
-            // 2. Capture Screen
-            let mut image_b64 = String::new();
-            let screens = screenshots::Screen::all().unwrap_or_default();
-            if let Some(screen) = screens.first() {
-                if let Ok(image) = screen.capture() {
-                    let dynamic_image = image::DynamicImage::ImageRgba8(image);
-                    let mut buffer = Vec::new();
-                    let mut cursor = Cursor::new(&mut buffer);
-                    // Resize to 720p for HD monitoring since user has good internet
-                    let resized = dynamic_image.thumbnail(1280, 720);
-                    
-                    if resized.write_to(&mut cursor, ImageOutputFormat::Jpeg(75)).is_ok() {
-                        image_b64 = general_purpose::STANDARD.encode(&buffer);
-                    }
-                }
-            }
+            // 2. Capture Screen - REMOVED for WebRTC compatibility
+            // We only send stats here to keep the dashboard updated without Hogging DXGI
+            let image_b64 = String::new(); 
 
-            if !image_b64.is_empty() {
+            // Send payload (Stats + Empty Image)
+            // if !image_b64.is_empty() { // REMOVED check to allow stats-only updates
+            {
                 let payload = json!({
                     "image": image_b64,
                     "stats": stats,
@@ -166,12 +156,18 @@ fn start_signaling_background(hwid: String, base_url: String) {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             println!(">>> Starting Signaling WebSocket for HWID: {}", hwid);
-            let ws_url = format!("wss://test.asadvanceit.com/app/reverb_app_key?protocol=7&client=js&version=8.4.0-rc2&flash=false");
-            
-            let webrtc_manager: Arc<Mutex<Option<WebRTCManager>>> = Arc::new(Mutex::new(None));
-            let is_capturing = Arc::new(std::sync::atomic::AtomicBool::new(true)); // Default to true
+            let rtc_manager: Arc<Mutex<Option<WebRTCManager>>> = Arc::new(Mutex::new(None));
+            let is_capturing = Arc::new(AtomicBool::new(true)); // Default to true
+            let stream_loop_running = Arc::new(AtomicBool::new(false));
             let hwid_clone = hwid.clone();
             let base_url_clone = base_url.clone();
+
+            #[cfg(debug_assertions)]
+            let ws_base = "ws://localhost:8080";
+            #[cfg(not(debug_assertions))]
+            let ws_base = "wss://test.asadvanceit.com";
+
+            let ws_url = format!("{}/app/reverb_app_key?protocol=7&client=js&version=8.4.0-rc2&flash=false", ws_base);
 
             loop {
                 match tokio_tungstenite::connect_async(&ws_url).await {
@@ -208,26 +204,55 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                         match manager.handle_offer(sdp).await {
                                                             Ok(answer_sdp) => {
                                                                 send_signal(&base_url_clone, &hwid_clone, json!({ "type": "answer", "sdp": answer_sdp })).await;
-                                                                let mut mg = webrtc_manager.lock().await;
+                                                                let mut mg = rtc_manager.lock().await;
                                                                 *mg = Some(manager);
                                                                 
                                                                 // Start Stream Loop
-                                                                let mgr_clone = Arc::clone(&webrtc_manager);
+                                                                let mgr_clone = Arc::clone(&rtc_manager);
                                                                 let rt_handle = tokio::runtime::Handle::current();
                                                                 let is_capturing_clone = Arc::clone(&is_capturing);
+                                                                let loop_running_clone = Arc::clone(&stream_loop_running);
                                                                 
                                                                 std::thread::spawn(move || {
+                                                                    if loop_running_clone.swap(true, Ordering::SeqCst) {
+                                                                        println!(">>> Video stream loop already running, skipping new thread.");
+                                                                        return;
+                                                                    }
                                                                     println!(">>> Starting WebRTC Video Stream Loop (Dedicated Thread)");
-                                                                    let capture = DXGICapture::new().expect("DXGI Init Failed");
-                                                                    let encoder = MFEncoder::new(1280, 720).expect("MF Encoder Init Failed");
                                                                     
+                                                                    // Try DXGI first, fallback to screenshots crate
+                                                                    let use_dxgi = match DXGICapture::new() {
+                                                                        Ok(c) => {
+                                                                            println!(">>> Using DXGI capture");
+                                                                            Some(c)
+                                                                        },
+                                                                        Err(e) => {
+                                                                            println!(">>> DXGI Failed: {:?}, using screenshots fallback", e);
+                                                                            None
+                                                                        }
+                                                                    };
+                                                                    
+                                                                    // For screenshots fallback, get primary screen
+                                                                    let screens = screenshots::Screen::all().unwrap_or_default();
+                                                                    let primary_screen = screens.into_iter().next();
+                                                                    
+                                                                    if use_dxgi.is_none() && primary_screen.is_none() {
+                                                                        println!(">>> ERROR: No capture method available!");
+                                                                        return;
+                                                                    }
+                                                                    
+                                                                    let mut loop_count: u64 = 0;
                                                                     loop {
+                                                                        loop_count += 1;
                                                                         let result = rt_handle.block_on(async {
                                                                             let mg = mgr_clone.lock().await;
                                                                             if mg.is_none() { return None; }
                                                                             // Only process frames if the DataChannel is ready
                                                                             if let Some(manager) = mg.as_ref() {
                                                                                 if !manager.is_data_channel_ready().await {
+                                                                                    if loop_count % 100 == 1 {
+                                                                                        println!(">>> Data Channel NOT ready yet (loop {})", loop_count);
+                                                                                    }
                                                                                     return None;
                                                                                 }
                                                                             }
@@ -245,53 +270,61 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                             continue;
                                                                         }
 
-                                                                        let frame_start = std::time::Instant::now();
-                                                                        
-                                                                        if let Ok(captured) = capture.capture_frame() {
-                                                                            if let Ok(raw_bytes) = capture.get_texture_bytes(&captured.texture) {
-                                                                                let mut desc = D3D11_TEXTURE2D_DESC::default();
-                                                                                unsafe { captured.texture.GetDesc(&mut desc) };
-                                                                                let (w, h) = (desc.Width, desc.Height);
+                                                                        // Capture frame using available method
+                                                                        let frame_data: Option<(Vec<u8>, u32, u32)> = if let Some(ref capture) = use_dxgi {
+                                                                            // DXGI capture path
+                                                                            if let Ok(captured) = capture.capture_frame() {
+                                                                                if let Ok(raw_bytes) = capture.get_texture_bytes(&captured.texture) {
+                                                                                    let mut desc = D3D11_TEXTURE2D_DESC::default();
+                                                                                    unsafe { captured.texture.GetDesc(&mut desc) };
+                                                                                    Some((raw_bytes, desc.Width, desc.Height))
+                                                                                } else { None }
+                                                                            } else { None }
+                                                                        } else if let Some(ref screen) = primary_screen {
+                                                                            // Screenshots crate fallback
+                                                                            if let Ok(img) = screen.capture() {
+                                                                                let w = img.width();
+                                                                                let h = img.height();
+                                                                                Some((img.into_raw(), w, h))
+                                                                            } else { None }
+                                                                        } else { None };
 
-                                                                                // High speed Resize + JPEG
-                                                                                let img = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(w, h, raw_bytes);
-                                                                                if let Some(img) = img {
-                                                                                    // Nearest neighbor resize is the fastest
-                                                                                    let resized = image::imageops::resize(&img, 1280, 720, image::imageops::FilterType::Nearest);
-                                                                                    
-                                                                                    let mut jpg_bytes = Vec::new();
-                                                                                    let mut cursor = Cursor::new(&mut jpg_bytes);
-                                                                                    
-                                                                                    // Use JpegEncoder for better quality/speed control
-                                                                                    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor, 60);
-                                                                                    let _ = encoder.encode(&resized, 1280, 720, image::ColorType::Rgba8);
+                                                                        if let Some((raw_bytes, w, h)) = frame_data {
+                                                                            // println!(">>> Captured frame {}x{}", w, h); // Too noisy
+                                                                            let img = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(w, h, raw_bytes);
+                                                                            if let Some(img) = img {
+                                                                                // Nearest neighbor resize is the fastest
+                                                                                let resized = image::imageops::resize(&img, 1280, 720, image::imageops::FilterType::Nearest);
+                                                                                
+                                                                                let mut jpg_bytes = Vec::new();
+                                                                                let mut cursor = Cursor::new(&mut jpg_bytes);
+                                                                                
+                                                                                // Use JpegEncoder for better quality/speed control
+                                                                                let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor, 60);
+                                                                                let _ = encoder.encode(&resized, 1280, 720, image::ColorType::Rgba8);
 
-                                                                                    if !jpg_bytes.is_empty() {
-                                                                                        let _ = rt_handle.block_on(async {
-                                                                                            let mg = mgr_clone.lock().await;
-                                                                                            if let Some(manager) = mg.as_ref() {
-                                                                                                let _ = manager.send_data(jpg_bytes).await;
-                                                                                            }
-                                                                                        });
-                                                                                    }
-                                                                                }
-                                                                            }
-
-                                                                            if let Ok(packet) = encoder.encode_frame(&captured.texture) {
-                                                                                if !packet.is_empty() {
+                                                                                if !jpg_bytes.is_empty() {
+                                                                                    let len = jpg_bytes.len();
                                                                                     let _ = rt_handle.block_on(async {
                                                                                         let mg = mgr_clone.lock().await;
                                                                                         if let Some(manager) = mg.as_ref() {
-                                                                                            let _ = manager.send_video_packet(packet).await;
+                                                                                            if manager.is_data_channel_ready().await {
+                                                                                                let _ = manager.send_data(jpg_bytes).await;
+                                                                                                if loop_count % 30 == 1 {
+                                                                                                    println!(">>> Sent JPEG frame: {} bytes", len);
+                                                                                                }
+                                                                                            }
                                                                                         }
                                                                                     });
                                                                                 }
                                                                             }
+                                                                        } else {
+                                                                            // println!(">>> Frame capture failed");
                                                                         }
                                                                         
-                                                                        std::thread::sleep(std::time::Duration::from_millis(30));
+                                                                        std::thread::sleep(std::time::Duration::from_millis(100)); // ~10 FPS for debugging
                                                                     }
-                                                                    println!(">>> WebRTC Video Stream Loop Ended");
+                                                                    loop_running_clone.store(false, Ordering::SeqCst);
                                                                 });
                                                             },
                                                             Err(e) => println!(">>> Offer Handle Error: {}", e),
@@ -300,7 +333,7 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                     Err(e) => println!(">>> WebRTC Manager Init Error: {}", e),
                                                 }
                                             } else if sig_type == "candidate" {
-                                                let mut mg = webrtc_manager.lock().await;
+                                                let mut mg = rtc_manager.lock().await;
                                                 if let Some(manager) = mg.as_ref() {
                                                     let cand = serde_json::from_value(signal_data["candidate"].clone()).unwrap_or_default();
                                                     let _ = manager.add_ice_candidate(cand).await;
@@ -339,15 +372,28 @@ fn start_signaling_background(hwid: String, base_url: String) {
 async fn send_signal(base_url: &str, hwid: &str, payload: serde_json::Value) {
     let client = reqwest::Client::new();
     let url = format!("{}/api/agent/signal", base_url);
+    // MUST match what the frontend listens to: agent-monitor.device.{hwid}
     let target_channel = format!("agent-monitor.device.{}", hwid);
+    let signal_type = payload["type"].as_str().unwrap_or("unknown");
     
-    let _ = client.post(&url)
+    println!(">>> Sending Signal: {} to channel: {}", signal_type, target_channel);
+    
+    match client.post(&url)
         .json(&json!({
             "payload": payload,
             "target_channel": target_channel
         }))
         .send()
-        .await;
+        .await {
+            Ok(res) => {
+                if !res.status().is_success() {
+                    println!(">>> Signal Send Error: HTTP {}", res.status());
+                } else {
+                    println!(">>> Signal Sent Successfully");
+                }
+            },
+            Err(e) => println!(">>> Signal Send Request Error: {}", e),
+        }
 }
 
 fn main() {
@@ -355,7 +401,13 @@ fn main() {
         .setup(|_app| {
             // Start Signaling in Background
             let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
-            start_signaling_background(hwid, "https://test.asadvanceit.com".to_string());
+            
+            #[cfg(debug_assertions)]
+            let base_url = "http://localhost:8000";
+            #[cfg(not(debug_assertions))]
+            let base_url = "https://test.asadvanceit.com";
+            
+            start_signaling_background(hwid, base_url.to_string());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

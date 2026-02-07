@@ -33,7 +33,7 @@ class MonitoringController extends Controller
     public function uploadStream(Request $request)
     {
         $request->validate([
-            'image' => 'required|string',
+            'image' => 'nullable|string',
             'stats' => 'required|array',
             'hardware_id' => 'nullable|string',
         ]);
@@ -53,7 +53,10 @@ class MonitoringController extends Controller
             );
         }
 
-        $channelId = 'user.' . $user->id;
+        // Broadcast to device channel so it matches the Agent's signaling channel and Frontend subscription
+        $channelId = 'device.' . ($request->hardware_id ?? 'unknown');
+        // $channelId = 'user.' . $user->id; // Old logic
+
         broadcast(new AgentDataStream($channelId, $request->image, $request->stats));
 
         return response()->json(['status' => 'ok']);

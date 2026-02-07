@@ -16,8 +16,8 @@ const btnLoader = loginBtn.querySelector('.btn-loader');
 const errorMessage = document.getElementById('errorMessage');
 const successMessage = document.getElementById('successMessage');
 
-// API URL - Change this to your production URL when deploying
-const BASE_URL = 'https://test.asadvanceit.com';
+// API URL - Auto-switch based on environment (Dev = Localhost, Build = Production)
+const BASE_URL = import.meta.env.DEV ? 'http://localhost:8000' : 'https://test.asadvanceit.com';
 const API_URL = `${BASE_URL}/api/agent/login`;
 
 // Heartbeat system
@@ -92,7 +92,14 @@ form.addEventListener('submit', async (e) => {
             successMessage.style.display = 'block';
 
             // Open magic URL in browser - using bracket notation to be safe with casing
-            const magicUrl = result.magic_url || result.magicUrl;
+            let magicUrl = result.magic_url || result.magicUrl;
+
+            // Force HTTP in Dev mode to avoid SSL errors with php artisan serve
+            if (import.meta.env.DEV && magicUrl.startsWith('https://')) {
+                console.log('Dev mode: Converting magic link to HTTP');
+                magicUrl = magicUrl.replace('https://', 'http://');
+            }
+
             await invoke('open_browser', { url: magicUrl });
         } else {
             throw new Error(result.message || 'Login failed');
