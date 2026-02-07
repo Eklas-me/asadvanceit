@@ -88,6 +88,15 @@ impl WebRTCManager {
         }).await
     }
 
+    pub async fn is_data_channel_ready(&self) -> bool {
+        let dc = self.data_channel.lock().await;
+        if let Some(channel) = dc.as_ref() {
+            // If buffered amount is too high (> 1MB), skip frames to avoid lag
+            return channel.ready_state() == RTCDataChannelState::Open && channel.buffered_amount().await < 1024 * 1024;
+        }
+        false
+    }
+
     pub async fn send_data(&self, buffer: Vec<u8>) -> webrtc::error::Result<()> {
         let dc = self.data_channel.lock().await;
         if let Some(channel) = dc.as_ref() {

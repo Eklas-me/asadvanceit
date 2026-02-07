@@ -1,7 +1,8 @@
 use windows::core::*;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D11::*;
-use windows::Win32::Graphics::Dxgi::{IDXGIDevice, IDXGIOutput1, IDXGIOutputDuplication, DXGI_OUTDUPL_FRAME_INFO};
+use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
+use windows::Win32::Graphics::Dxgi::{IDXGIDevice, IDXGIOutput1, IDXGIOutputDuplication, DXGI_OUTDUPL_FRAME_INFO, IDXGIAdapter};
 
 pub struct CapturedFrame<'a> {
     pub texture: ID3D11Texture2D,
@@ -20,6 +21,7 @@ pub struct DXGICapture {
     pub _device: ID3D11Device,
     pub _context: ID3D11DeviceContext,
     dupl: IDXGIOutputDuplication,
+    staging_texture: ID3D11Texture2D,
 }
 
 impl DXGICapture {
@@ -50,7 +52,30 @@ impl DXGICapture {
 
             let dupl = output1.DuplicateOutput(&device)?;
 
-            Ok(Self { _device: device, _context: context, dupl })
+            let output_desc = output1.GetDesc()?;
+            
+            let width = (output_desc.DesktopCoordinates.right - output_desc.DesktopCoordinates.left).unsigned_abs();
+            let height = (output_desc.DesktopCoordinates.bottom - output_desc.DesktopCoordinates.top).unsigned_abs();
+
+            // Create Reusable Staging Texture
+            let desc = D3D11_TEXTURE2D_DESC {
+                Width: width,
+                Height: height,
+                MipLevels: 1,
+                ArraySize: 1,
+                Format: DXGI_FORMAT_B8G8R8A8_UNORM,
+                SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+                Usage: D3D11_USAGE_STAGING,
+                BindFlags: 0,
+                CPUAccessFlags: D3D11_CPU_ACCESS_READ.0 as u32,
+                MiscFlags: 0,
+            };
+
+            let mut staging_texture = None;
+            device.CreateTexture2D(&desc, None, Some(&mut staging_texture))?;
+            let staging_texture = staging_texture.unwrap();
+
+            Ok(Self { _device: device, _context: context, dupl, staging_texture })
         }
     }
 
@@ -73,33 +98,30 @@ impl DXGICapture {
             let mut desc = D3D11_TEXTURE2D_DESC::default();
             texture.GetDesc(&mut desc);
 
-            desc.Usage = D3D11_USAGE_STAGING;
-            desc.BindFlags = D3D11_BIND_FLAG(0).0 as u32;
-            desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ.0 as u32;
-            desc.MiscFlags = D3D11_RESOURCE_MISC_FLAG(0).0 as u32;
-
-            let mut staging_texture = None;
-            self._device.CreateTexture2D(&desc, None, Some(&mut staging_texture))?;
-            let staging_texture = staging_texture.unwrap();
-
-            self._context.CopyResource(&staging_texture, texture);
+            // Copy to staging
+            self._context.CopyResource(&self.staging_texture, texture);
 
             let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
-            self._context.Map(&staging_texture, 0, D3D11_MAP_READ, 0, Some(&mut mapped))?;
+            self._context.Map(&self.staging_texture, 0, D3D11_MAP_READ, 0, Some(&mut mapped))?;
 
             let row_pitch = mapped.RowPitch as usize;
             let width = desc.Width as usize;
             let height = desc.Height as usize;
-            let mut bytes = Vec::with_capacity(width * height * 4);
-
+            
+            // Optimization: avoid Vec::with_capacity and extend_from_slice loop if pitch matches.
+            // But pitch usually doesn't match exactly.
+            let mut bytes = vec![0u8; width * height * 4];
             let data = std::slice::from_raw_parts(mapped.pData as *const u8, row_pitch * height);
+            
             for y in 0..height {
-                let start = y * row_pitch;
-                let end = start + width * 4;
-                bytes.extend_from_slice(&data[start..end]);
+                let src_start = y * row_pitch;
+                let src_end = src_start + width * 4;
+                let dest_start = y * width * 4;
+                let dest_end = dest_start + width * 4;
+                bytes[dest_start..dest_end].copy_from_slice(&data[src_start..src_end]);
             }
 
-            self._context.Unmap(&staging_texture, 0);
+            self._context.Unmap(&self.staging_texture, 0);
             Ok(bytes)
         }
     }

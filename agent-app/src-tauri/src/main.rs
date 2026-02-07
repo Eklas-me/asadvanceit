@@ -1,3 +1,4 @@
+use image::codecs::jpeg::JpegEncoder;
 use image::ImageOutputFormat;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -6,6 +7,7 @@ use std::thread;
 use std::time::Duration;
 use sysinfo::System;
 use base64::{Engine as _, engine::general_purpose};
+use windows::Win32::Graphics::Direct3D11::{ID3D11Texture2D, D3D11_TEXTURE2D_DESC};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -221,29 +223,45 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                         let result = rt_handle.block_on(async {
                                                                             let mg = mgr_clone.lock().await;
                                                                             if mg.is_none() { return None; }
-                                                                            
-                                                                            // We still need to capture and encode OUTSIDE the lock for performance
-                                                                            // but we can't easily do that if we need the manager.
-                                                                            // Actually, send_video_packet is the only async part.
+                                                                            // Only process frames if the DataChannel is ready
+                                                                            if let Some(manager) = mg.as_ref() {
+                                                                                if !manager.is_data_channel_ready().await {
+                                                                                    return None;
+                                                                                }
+                                                                            }
                                                                             Some(())
                                                                         });
 
-                                                                        if result.is_none() { break; }
+                                                                        if result.is_none() { 
+                                                                            std::thread::sleep(std::time::Duration::from_millis(10));
+                                                                            continue; 
+                                                                        }
 
+                                                                        let frame_start = std::time::Instant::now();
+                                                                        
                                                                         if let Ok(captured) = capture.capture_frame() {
                                                                             if let Ok(raw_bytes) = capture.get_texture_bytes(&captured.texture) {
-                                                                                // Compress to JPEG using image crate
-                                                                                let img = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(1280, 720, raw_bytes);
+                                                                                let mut desc = D3D11_TEXTURE2D_DESC::default();
+                                                                                unsafe { captured.texture.GetDesc(&mut desc) };
+                                                                                let (w, h) = (desc.Width, desc.Height);
+
+                                                                                // High speed Resize + JPEG
+                                                                                let img = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(w, h, raw_bytes);
                                                                                 if let Some(img) = img {
+                                                                                    // Nearest neighbor resize is the fastest
+                                                                                    let resized = image::imageops::resize(&img, 1280, 720, image::imageops::FilterType::Nearest);
+                                                                                    
                                                                                     let mut jpg_bytes = Vec::new();
                                                                                     let mut cursor = Cursor::new(&mut jpg_bytes);
-                                                                                    let _ = img.write_to(&mut cursor, image::ImageFormat::Jpeg);
+                                                                                    
+                                                                                    // Use JpegEncoder for better quality/speed control
+                                                                                    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor, 60);
+                                                                                    let _ = encoder.encode(&resized, 1280, 720, image::ColorType::Rgba8);
 
                                                                                     if !jpg_bytes.is_empty() {
                                                                                         let _ = rt_handle.block_on(async {
                                                                                             let mg = mgr_clone.lock().await;
                                                                                             if let Some(manager) = mg.as_ref() {
-                                                                                                // Send as binary over DataChannel
                                                                                                 let _ = manager.send_data(jpg_bytes).await;
                                                                                             }
                                                                                         });
