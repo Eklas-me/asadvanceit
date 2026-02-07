@@ -15,17 +15,20 @@ class WebRTCSignaling implements ShouldBroadcastNow
 
     public $payload;
     public $targetChannel;
+    public $eventName;
 
     /**
      * Create a new event instance.
      * 
      * @param array $payload The signaling data (type, sdp, candidate, etc.)
      * @param string $targetChannel The channel to broadcast to
+     * @param string|null $eventName Custom event name (default: webrtc.signal)
      */
-    public function __construct(array $payload, string $targetChannel)
+    public function __construct(array $payload, string $targetChannel, ?string $eventName = null)
     {
         $this->payload = $payload;
         $this->targetChannel = $targetChannel;
+        $this->eventName = $eventName ?? 'webrtc.signal';
     }
 
     /**
@@ -40,6 +43,6 @@ class WebRTCSignaling implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'webrtc.signal';
+        return $this->eventName;
     }
 }

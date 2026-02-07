@@ -63,8 +63,9 @@ class MonitoringController extends Controller
     {
         $payload = $request->payload;
         $targetChannel = $request->target_channel;
+        $eventType = $request->event_type ?? null;
 
-        broadcast(new \App\Events\WebRTCSignaling($payload, $targetChannel))->toOthers();
+        broadcast(new \App\Events\WebRTCSignaling($payload, $targetChannel, $eventType))->toOthers();
 
         return response()->json(['status' => 'sent']);
     }

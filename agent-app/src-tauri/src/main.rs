@@ -169,6 +169,7 @@ fn start_signaling_background(hwid: String, base_url: String) {
             let ws_url = format!("wss://test.asadvanceit.com/app/reverb_app_key?protocol=7&client=js&version=8.4.0-rc2&flash=false");
             
             let webrtc_manager: Arc<Mutex<Option<WebRTCManager>>> = Arc::new(Mutex::new(None));
+            let is_capturing = Arc::new(std::sync::atomic::AtomicBool::new(true)); // Default to true
             let hwid_clone = hwid.clone();
             let base_url_clone = base_url.clone();
 
@@ -213,6 +214,7 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                 // Start Stream Loop
                                                                 let mgr_clone = Arc::clone(&webrtc_manager);
                                                                 let rt_handle = tokio::runtime::Handle::current();
+                                                                let is_capturing_clone = Arc::clone(&is_capturing);
                                                                 
                                                                 std::thread::spawn(move || {
                                                                     println!(">>> Starting WebRTC Video Stream Loop (Dedicated Thread)");
@@ -235,6 +237,12 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                         if result.is_none() { 
                                                                             std::thread::sleep(std::time::Duration::from_millis(10));
                                                                             continue; 
+                                                                        }
+
+                                                                        // Check Pause State
+                                                                        if !is_capturing_clone.load(std::sync::atomic::Ordering::Relaxed) {
+                                                                            std::thread::sleep(std::time::Duration::from_millis(100));
+                                                                            continue;
                                                                         }
 
                                                                         let frame_start = std::time::Instant::now();
@@ -297,6 +305,18 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                     let cand = serde_json::from_value(signal_data["candidate"].clone()).unwrap_or_default();
                                                     let _ = manager.add_ice_candidate(cand).await;
                                                 }
+                                            }
+                                        } else if event == "control" {
+                                            // Handle Control Signals
+                                            let control_data = data["data"].as_str().map(|s| serde_json::from_str::<serde_json::Value>(s).unwrap_or_default()).unwrap_or_default();
+                                            let action = control_data["action"].as_str().unwrap_or("");
+                                            
+                                            if action == "stop_capture" || action == "pause" {
+                                                println!(">>> Received Stop/Pause Signal");
+                                                is_capturing.store(false, std::sync::atomic::Ordering::Relaxed);
+                                            } else if action == "start_capture" || action == "play" {
+                                                println!(">>> Received Start/Play Signal");
+                                                is_capturing.store(true, std::sync::atomic::Ordering::Relaxed);
                                             }
                                         }
                                     }
