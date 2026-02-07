@@ -215,7 +215,7 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                 std::thread::spawn(move || {
                                                                     println!(">>> Starting WebRTC Video Stream Loop (Dedicated Thread)");
                                                                     let capture = DXGICapture::new().expect("DXGI Init Failed");
-                                                                    let encoder = MFEncoder::new(1920, 1080).expect("MF Encoder Init Failed");
+                                                                    let encoder = MFEncoder::new(1280, 720).expect("MF Encoder Init Failed");
                                                                     
                                                                     loop {
                                                                         let result = rt_handle.block_on(async {
@@ -233,7 +233,7 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                         if let Ok(captured) = capture.capture_frame() {
                                                                             if let Ok(raw_bytes) = capture.get_texture_bytes(&captured.texture) {
                                                                                 // Compress to JPEG using image crate
-                                                                                let img = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(1920, 1080, raw_bytes);
+                                                                                let img = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(1280, 720, raw_bytes);
                                                                                 if let Some(img) = img {
                                                                                     let mut jpg_bytes = Vec::new();
                                                                                     let mut cursor = Cursor::new(&mut jpg_bytes);
