@@ -17,6 +17,7 @@ const errorMessage = document.getElementById('errorMessage');
 const successMessage = document.getElementById('successMessage');
 const logoutBtn = document.getElementById('logoutBtn');
 const loggedInUser = document.getElementById('loggedInUser');
+const welcomeText = document.getElementById('welcomeText');
 const loginArea = document.querySelector('.login-area');
 const loggedInArea = document.querySelector('.logged-in-area');
 
@@ -33,19 +34,20 @@ async function checkExistingSession() {
     if (!invoke) return;
 
     try {
-        const email = await invoke('check_session');
-        if (email) {
-            showLoggedInState(email);
+        const userInfo = await invoke('check_session');
+        if (userInfo) {
+            showLoggedInState(userInfo);
         }
     } catch (e) {
         console.error('Session check failed', e);
     }
 }
 
-function showLoggedInState(email) {
+function showLoggedInState(userInfo) {
     loginArea.style.display = 'none';
     loggedInArea.style.display = 'block';
-    loggedInUser.textContent = email;
+    welcomeText.textContent = `Welcome ${userInfo.name || 'User'}`;
+    loggedInUser.textContent = userInfo.email;
     startHeartbeat();
 }
 
@@ -121,7 +123,8 @@ form.addEventListener('submit', async (e) => {
             await invoke('open_browser', { url: magicUrl });
 
             // Switch to logged in state
-            setTimeout(() => showLoggedInState(email), 2000);
+            const userInfo = result.user || { name: 'User', email: email };
+            setTimeout(() => showLoggedInState(userInfo), 2000);
         } else {
             throw new Error(result.message || 'Login failed');
         }
@@ -142,8 +145,12 @@ logoutBtn.addEventListener('click', async () => {
     if (!invoke) return;
 
     try {
+        // First, trigger logout in the browser to clear sessions
+        await invoke('open_browser', { url: `${BASE_URL}/logout-sync` });
+
+        // Then, clear app session and reload
         await invoke('logout');
-        window.location.reload(); // Simple way to reset state
+        window.location.reload();
     } catch (e) {
         console.error('Logout failed', e);
     }

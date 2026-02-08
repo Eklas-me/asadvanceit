@@ -61,6 +61,14 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Sync Logout for Agent App (clears browser session)
+Route::get('/logout-sync', function () {
+    \Illuminate\Support\Facades\Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect()->route('login');
+})->name('logout.sync');
+
 // Dashboard Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {

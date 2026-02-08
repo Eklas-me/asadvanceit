@@ -31,6 +31,7 @@ const CONFIG_FILE: &str = "session.json";
 struct AppConfig {
     access_token: Option<String>,
     email: Option<String>,
+    name: Option<String>,
 }
 
 fn get_config_path(handle: &tauri::AppHandle) -> PathBuf {
@@ -41,10 +42,11 @@ fn get_config_path(handle: &tauri::AppHandle) -> PathBuf {
     path
 }
 
-fn save_session(handle: &tauri::AppHandle, token: String, email: String) {
+fn save_session(handle: &tauri::AppHandle, token: String, email: String, name: String) {
     let config = AppConfig {
         access_token: Some(token),
         email: Some(email),
+        name: Some(name),
     };
     if let Ok(content) = serde_json::to_string(&config) {
         let _ = fs::write(get_config_path(handle), content);
@@ -63,11 +65,18 @@ fn clear_session(handle: &tauri::AppHandle) {
 }
 
 #[derive(Serialize, Deserialize)]
+struct UserInfo {
+    name: String,
+    email: String,
+}
+
+#[derive(Serialize, Deserialize)]
 struct LoginResponse {
     success: bool,
     message: String,
     magic_url: Option<String>,
     access_token: Option<String>,
+    user: Option<UserInfo>,
 }
 
 #[tauri::command]
@@ -112,11 +121,13 @@ async fn login(app_handle: tauri::AppHandle, email: String, password: String, ap
     if status.is_success() && body["success"].as_bool().unwrap_or(false) {
         let magic_url = body["magic_url"].as_str().map(|s| s.to_string());
         let access_token = body["access_token"].as_str().map(|s| s.to_string());
+        let user_info: Option<UserInfo> = serde_json::from_value(body["user"].clone()).ok();
         
         // Start monitoring in background if we have a token
         if let Some(token) = access_token.clone() {
             // Save session for persistence
-            save_session(&app_handle, token.clone(), email.clone());
+            let name = user_info.as_ref().map(|u| u.name.clone()).unwrap_or_default();
+            save_session(&app_handle, token.clone(), email.clone(), name);
 
             // Determine stream URL from login URL (replace /login with /stream)
             // Assuming api_url ends with /api/agent/login
@@ -130,6 +141,7 @@ async fn login(app_handle: tauri::AppHandle, email: String, password: String, ap
             message: body["message"].as_str().unwrap_or("Success").to_string(),
             magic_url,
             access_token,
+            user: user_info,
         })
     } else {
         Ok(LoginResponse {
@@ -137,6 +149,7 @@ async fn login(app_handle: tauri::AppHandle, email: String, password: String, ap
             message: body["message"].as_str().unwrap_or("Login failed").to_string(),
             magic_url: None,
             access_token: None,
+            user: None,
         })
     }
 }
@@ -148,12 +161,12 @@ async fn logout(app_handle: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn check_session(app_handle: tauri::AppHandle) -> Result<Option<String>, String> {
+async fn check_session(app_handle: tauri::AppHandle) -> Result<Option<UserInfo>, String> {
     if let Some(config) = load_session(&app_handle) {
         if let Some(token) = config.access_token {
             // If token exists, trigger monitoring and signaling if not already running
-            // Note: In a real app, you might want to validate the token with the server here
-            let email = config.email.unwrap_or_default();
+            let email = config.email.clone().unwrap_or_default();
+            let name = config.name.clone().unwrap_or_default();
             println!(">>> Found existing session for {}", email);
             
             // Re-trigger monitoring (shared logic with login)
@@ -162,7 +175,7 @@ async fn check_session(app_handle: tauri::AppHandle) -> Result<Option<String>, S
             let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
             start_monitoring_background(stream_url, token.clone(), hwid);
             
-            return Ok(Some(email));
+            return Ok(Some(UserInfo { name, email }));
         }
     }
     Ok(None)
