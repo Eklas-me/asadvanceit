@@ -21,6 +21,45 @@ mod webrtc_manager;
 use webrtc_manager::WebRTCManager;
 use dxgi::DXGICapture;
 use encoder::MFEncoder;
+use std::path::PathBuf;
+use std::fs;
+
+const CONFIG_FILE: &str = "session.json";
+
+#[derive(Serialize, Deserialize, Default)]
+struct AppConfig {
+    access_token: Option<String>,
+    email: Option<String>,
+}
+
+fn get_config_path() -> PathBuf {
+    let mut path = tauri::api::path::app_config_dir(&tauri::Config::default()).unwrap_or_else(|| PathBuf::from("."));
+    // Ensure the directory exists
+    let _ = fs::create_dir_all(&path);
+    path.push(CONFIG_FILE);
+    path
+}
+
+fn save_session(token: String, email: String) {
+    let config = AppConfig {
+        access_token: Some(token),
+        email: Some(email),
+    };
+    if let Ok(content) = serde_json::to_string(&config) {
+        let _ = fs::write(get_config_path(), content);
+    }
+}
+
+fn load_session() -> Option<AppConfig> {
+    if let Ok(content) = fs::read_to_string(get_config_path()) {
+        return serde_json::from_str(&content).ok();
+    }
+    None
+}
+
+fn clear_session() {
+    let _ = fs::remove_file(get_config_path());
+}
 
 #[derive(Serialize, Deserialize)]
 struct LoginResponse {
@@ -75,6 +114,9 @@ async fn login(email: String, password: String, api_url: String) -> Result<Login
         
         // Start monitoring in background if we have a token
         if let Some(token) = access_token.clone() {
+            // Save session for persistence
+            save_session(token.clone(), email.clone());
+
             // Determine stream URL from login URL (replace /login with /stream)
             // Assuming api_url ends with /api/agent/login
             let stream_url = api_url.replace("/login", "/stream");
@@ -96,6 +138,33 @@ async fn login(email: String, password: String, api_url: String) -> Result<Login
             access_token: None,
         })
     }
+}
+
+#[tauri::command]
+async fn logout() -> Result<(), String> {
+    clear_session();
+    Ok(())
+}
+
+#[tauri::command]
+async fn check_session() -> Result<Option<String>, String> {
+    if let Some(config) = load_session() {
+        if let Some(token) = config.access_token {
+            // If token exists, trigger monitoring and signaling if not already running
+            // Note: In a real app, you might want to validate the token with the server here
+            let email = config.email.unwrap_or_default();
+            println!(">>> Found existing session for {}", email);
+            
+            // Re-trigger monitoring (shared logic with login)
+            let base_url = "https://test.asadvanceit.com"; // Default for now
+            let stream_url = format!("{}/api/agent/stream", base_url);
+            let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
+            start_monitoring_background(stream_url, token.clone(), hwid);
+            
+            return Ok(Some(email));
+        }
+    }
+    Ok(None)
 }
 
 #[tauri::command]
@@ -355,6 +424,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             login,
+            logout,
+            check_session,
             open_browser,
             get_hwid,
             get_computer_name

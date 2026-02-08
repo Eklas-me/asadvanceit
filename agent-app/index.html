@@ -22,26 +22,39 @@
             <h1>Advanced IT</h1>
             <p class="subtitle">System Viewer</p>
 
-            <form id="loginForm">
-                <div class="form-group">
-                    <input type="email" id="email" placeholder="Email Address" required>
-                </div>
-                <div class="form-group">
-                    <input type="password" id="password" placeholder="Password" required>
-                </div>
-                <button type="submit" id="loginBtn">
-                    <span class="btn-text">Sign In</span>
-                    <span class="btn-loader" style="display: none;">
-                        <svg class="spinner" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none"
-                                stroke-dasharray="60" stroke-linecap="round" />
-                        </svg>
-                    </span>
-                </button>
-            </form>
+            <div class="login-area">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <input type="email" id="email" placeholder="Email Address" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="password" placeholder="Password" required>
+                    </div>
+                    <button type="submit" id="loginBtn">
+                        <span class="btn-text">Sign In</span>
+                        <span class="btn-loader" style="display: none;">
+                            <svg class="spinner" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none"
+                                    stroke-dasharray="60" stroke-linecap="round" />
+                            </svg>
+                        </span>
+                    </button>
+                </form>
 
-            <div id="errorMessage" class="error-message" style="display: none;"></div>
-            <div id="successMessage" class="success-message" style="display: none;"></div>
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+                <div id="successMessage" class="success-message" style="display: none;"></div>
+            </div>
+
+            <div class="logged-in-area" style="display: none;">
+                <div class="status-indicator">
+                    <span class="dot pulse"></span>
+                    <span>Monitoring Active</span>
+                </div>
+                <p class="user-info">Logged in as: <br><strong id="loggedInUser"></strong></p>
+                <div class="actions">
+                    <button id="logoutBtn" class="btn-outline">Sign Out</button>
+                </div>
+            </div>
         </div>
     </div>
     <script type="module" src="/main.js"></script>

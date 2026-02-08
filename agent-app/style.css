@@ -126,3 +126,75 @@ button:disabled {
     color: #059669;
     font-size: 14px;
 }
+
+/* Logged In State Styles */
+.logged-in-area {
+    padding: 10px 0;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #059669;
+    font-weight: 600;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    background-color: #059669;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot.pulse {
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(5, 150, 105, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(5, 150, 105, 0);
+    }
+}
+
+.user-info {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 32px;
+    line-height: 1.6;
+}
+
+#loggedInUser {
+    color: #1a1a2e;
+    font-size: 16px;
+    word-break: break-all;
+}
+
+.actions {
+    margin-top: 24px;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid #e0e0e0;
+    color: #666;
+}
+
+.btn-outline:hover {
+    background: #f8f9fa;
+    border-color: #d0d0d0;
+    color: #1a1a2e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}

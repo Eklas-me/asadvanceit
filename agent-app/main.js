@@ -15,6 +15,10 @@ const btnText = loginBtn.querySelector('.btn-text');
 const btnLoader = loginBtn.querySelector('.btn-loader');
 const errorMessage = document.getElementById('errorMessage');
 const successMessage = document.getElementById('successMessage');
+const logoutBtn = document.getElementById('logoutBtn');
+const loggedInUser = document.getElementById('loggedInUser');
+const loginArea = document.querySelector('.login-area');
+const loggedInArea = document.querySelector('.logged-in-area');
 
 // API URL - Change this to your production URL when deploying
 const BASE_URL = 'https://test.asadvanceit.com';
@@ -23,6 +27,27 @@ const API_URL = `${BASE_URL}/api/agent/login`;
 // Heartbeat system
 let hardwareId = null;
 let computerName = null;
+
+async function checkExistingSession() {
+    const invoke = getTauriInvoke();
+    if (!invoke) return;
+
+    try {
+        const email = await invoke('check_session');
+        if (email) {
+            showLoggedInState(email);
+        }
+    } catch (e) {
+        console.error('Session check failed', e);
+    }
+}
+
+function showLoggedInState(email) {
+    loginArea.style.display = 'none';
+    loggedInArea.style.display = 'block';
+    loggedInUser.textContent = email;
+    startHeartbeat();
+}
 
 async function startHeartbeat() {
     const invoke = getTauriInvoke();
@@ -56,7 +81,7 @@ async function startHeartbeat() {
     }
 }
 
-startHeartbeat();
+checkExistingSession();
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -94,6 +119,9 @@ form.addEventListener('submit', async (e) => {
             // Open magic URL in browser - using bracket notation to be safe with casing
             const magicUrl = result.magic_url || result.magicUrl;
             await invoke('open_browser', { url: magicUrl });
+
+            // Switch to logged in state
+            setTimeout(() => showLoggedInState(email), 2000);
         } else {
             throw new Error(result.message || 'Login failed');
         }
@@ -106,5 +134,17 @@ form.addEventListener('submit', async (e) => {
         btnText.style.display = 'block';
         btnLoader.style.display = 'none';
         loginBtn.disabled = false;
+    }
+});
+
+logoutBtn.addEventListener('click', async () => {
+    const invoke = getTauriInvoke();
+    if (!invoke) return;
+
+    try {
+        await invoke('logout');
+        window.location.reload(); // Simple way to reset state
+    } catch (e) {
+        console.error('Logout failed', e);
     }
 });
