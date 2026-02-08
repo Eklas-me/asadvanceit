@@ -223,9 +223,58 @@
             color: #fca5a5;
             padding: 1rem;
             border-radius: 16px;
-            margin: 0 2.5rem 1rem;
+            margin: 0 0 1.5rem;
             text-align: center;
             font-size: 0.85rem;
+        }
+
+        .role-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .role-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-5px);
+        }
+
+        .role-btn i {
+            font-size: 1.8rem;
+            color: var(--primary-glow);
+        }
+
+        .role-btn span {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: #fff;
         }
     </style>
 @endpush
@@ -262,35 +311,59 @@
 
             <!-- Row 2: Interaction/Actions -->
             <div class="row-actions">
-                <form method="POST" action="{{ route('login') }}" style="margin-bottom: 2rem;">
-                    @csrf
-
-                    <div style="margin-bottom: 1.2rem;">
-                        <input id="email" type="email" class="form-control" name="email" value="{{ old('email') }}" required
-                            autocomplete="email" autofocus placeholder="Email Address"
-                            style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; outline: none;">
+                <!-- Role Selection Stage -->
+                <div id="roleSelection">
+                    <p class="action-summary">Please select your role to continue access to the system gateway.</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+                        <button onclick="selectRole('admin')" class="role-btn">
+                            <i class="fas fa-user-shield"></i>
+                            <span>Admin</span>
+                        </button>
+                        <button onclick="selectRole('worker')" class="role-btn">
+                            <i class="fas fa-user-tie"></i>
+                            <span>Worker</span>
+                        </button>
                     </div>
-
-                    <div style="margin-bottom: 1.5rem;">
-                        <input id="password" type="password" class="form-control" name="password" required
-                            autocomplete="current-password" placeholder="Password"
-                            style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; outline: none;">
-                    </div>
-
-                    <button type="submit"
-                        style="width: 100%; padding: 1rem; background: var(--primary-glow); border: none; border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                        Sign In
-                    </button>
-                </form>
-
-                <div style="text-align: center; margin-bottom: 1rem; color: rgba(255,255,255,0.3); font-size: 0.8rem;">
-                    — OR —
                 </div>
 
-                <a href="{{ route('app.download') }}" class="download-btn">
-                    <i class="fas fa-download"></i>
-                    <span>Download App</span>
-                </a>
+                <!-- Admin Login Stage (Hidden by default) -->
+                <div id="adminLoginForm" style="display: none;">
+                    <button onclick="goBack()" class="back-btn"><i class="fas fa-arrow-left"></i> Back</button>
+                    <form method="POST" action="{{ route('login') }}" style="margin-bottom: 2rem;">
+                        @csrf
+                        <div style="margin-bottom: 1.2rem;">
+                            <input id="email" type="email" class="form-control" name="email" value="{{ old('email') }}"
+                                required autocomplete="email" autofocus placeholder="Admin Email"
+                                style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; outline: none;">
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <input id="password" type="password" class="form-control" name="password" required
+                                autocomplete="current-password" placeholder="Admin Password"
+                                style="width: 100%; padding: 1rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; outline: none;">
+                        </div>
+                        <button type="submit"
+                            style="width: 100%; padding: 1rem; background: var(--primary-glow); border: none; border-radius: 12px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                            Sign In as Admin
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Worker Prompt Stage (Hidden by default) -->
+                <div id="workerPrompt" style="display: none;">
+                    <button onclick="goBack()" class="back-btn"><i class="fas fa-arrow-left"></i> Back</button>
+                    <div style="text-align: center; padding: 1rem 0;">
+                        <i class="fas fa-info-circle" style="font-size: 2.5rem; color: #6366f1; margin-bottom: 1.5rem;"></i>
+                        <h3 style="color: #fff; margin-bottom: 1rem;">Workers Access</h3>
+                        <p style="color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 2rem;">
+                            Workers cannot log in via the web browser. Please download and install the **Agent App** on your
+                            PC to start your shift.
+                        </p>
+                        <a href="{{ route('app.download') }}" class="download-btn">
+                            <i class="fas fa-download"></i>
+                            <span>Download Agent App</span>
+                        </a>
+                    </div>
+                </div>
 
                 <nav class="footer-nav">
                     <a href="{{ route('register') }}" class="nav-link">
@@ -307,11 +380,29 @@
 
 @push('scripts')
     <script>
-        const alert = document.querySelector('.aero-alert');
-        if (alert) {
+        function selectRole(role) {
+            document.getElementById('roleSelection').style.display = 'none';
+            if (role === 'admin') {
+                document.getElementById('adminLoginForm').style.display = 'block';
+            } else {
+                document.getElementById('workerPrompt').style.display = 'block';
+            }
+        }
+
+        function goBack() {
+            document.getElementById('adminLoginForm').style.display = 'none';
+            document.getElementById('workerPrompt').style.display = 'none';
+            document.getElementById('roleSelection').style.display = 'block';
+        }
+
+        const alertBox = document.querySelector('.alert-box');
+        if (alertBox) {
+            // Automatically show admin form if there are login errors
+            selectRole('admin');
+            
             setTimeout(() => {
-                alert.style.opacity = '0';
-                setTimeout(() => alert.remove(), 300);
+                alertBox.style.opacity = '0';
+                setTimeout(() => alertBox.remove(), 300);
             }, 5000);
         }
     </script>

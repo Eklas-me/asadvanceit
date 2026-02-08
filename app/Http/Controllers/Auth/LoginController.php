@@ -23,9 +23,18 @@ class LoginController extends Controller
 
         // Attempt to authenticate
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $user = Auth::user();
 
-            // Check if user status is active
-            if (Auth::user()->status !== 'active' && Auth::user()->role !== 'admin') {
+            // 1. Check Role - ONLY Admins can log into the web dashboard
+            if ($user->role !== 'admin') {
+                Auth::logout();
+                throw ValidationException::withMessages([
+                    'email' => 'Workers cannot log in via web. Please use the Agent App to log in.',
+                ]);
+            }
+
+            // 2. Check if user status is active
+            if ($user->status !== 'active') {
                 Auth::logout();
                 throw ValidationException::withMessages([
                     'email' => 'Your account is pending approval by an administrator.',
@@ -35,7 +44,7 @@ class LoginController extends Controller
             $request->session()->regenerate();
 
             // Trigger authenticated method for Telegram notification - DO NOT REMOVE
-            $this->authenticated($request, Auth::user());
+            $this->authenticated($request, $user);
 
             return redirect()->intended('/dashboard');
         }
