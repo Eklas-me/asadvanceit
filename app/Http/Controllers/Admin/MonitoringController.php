@@ -10,7 +10,12 @@ class MonitoringController extends Controller
 {
     public function index()
     {
-        $devices = \App\Models\Device::with('user')->orderBy('last_seen', 'desc')->get();
+        // Only show devices active in the last 2 minutes
+        $devices = \App\Models\Device::with('user')
+            ->where('last_seen', '>=', now()->subMinutes(2))
+            ->orderBy('last_seen', 'desc')
+            ->get();
+
         return view('admin.monitoring.index', compact('devices'));
     }
 

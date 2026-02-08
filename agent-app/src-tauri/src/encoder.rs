@@ -1,7 +1,7 @@
 use windows::Win32::Media::MediaFoundation::*;
 use windows::Win32::Graphics::Direct3D11::*;
 use windows::Win32::System::Com::*;
-use windows::Win32::System::Variant::*;
+// use windows::Win32::System::Variant::*;
 use windows::core::*;
 
 pub struct MFEncoder {
@@ -70,19 +70,17 @@ impl MFEncoder {
 
             // 4. Set Low Latency Properties via ICodecAPI
             if let Ok(codec_api) = encoder.cast::<ICodecAPI>() {
-                unsafe {
-                    // Low Latency Mode
-                    let var_low_latency = VARIANT::from(true);
-                    let _ = codec_api.SetValue(&CODECAPI_AVLowLatencyMode, &var_low_latency);
+                // Low Latency Mode
+                let var_low_latency = VARIANT::from(true);
+                let _ = codec_api.SetValue(&CODECAPI_AVLowLatencyMode, &var_low_latency);
 
-                    // Real Time Mode
-                    let var_real_time = VARIANT::from(true);
-                    let _ = codec_api.SetValue(&CODECAPI_AVEncCommonRealTime, &var_real_time);
-                    
-                    // GOP Size (30 frames)
-                    let var_gop = VARIANT::from(30u32);
-                    let _ = codec_api.SetValue(&CODECAPI_AVEncMPVGOPSize, &var_gop);
-                }
+                // Real Time Mode
+                let var_real_time = VARIANT::from(true);
+                let _ = codec_api.SetValue(&CODECAPI_AVEncCommonRealTime, &var_real_time);
+                
+                // GOP Size (30 frames)
+                let var_gop = VARIANT::from(30u32);
+                let _ = codec_api.SetValue(&CODECAPI_AVEncMPVGOPSize, &var_gop);
             }
 
             encoder.ProcessMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0)?;
