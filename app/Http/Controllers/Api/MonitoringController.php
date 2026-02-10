@@ -6,6 +6,7 @@ use App\Events\AgentDataStream;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Models\User;
 use App\Models\Device;
 
@@ -56,6 +57,37 @@ class MonitoringController extends Controller
         $channelId = 'user.' . $user->id;
         broadcast(new AgentDataStream($channelId, $request->image, $request->stats));
 
+        // Check if an admin is actively watching this device
+        $streamRequested = false;
+        if ($request->hardware_id) {
+            $streamRequested = Cache::get('stream_requested_' . $request->hardware_id, false);
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'stream_requested' => $streamRequested,
+        ]);
+    }
+
+    /**
+     * Admin calls this to mark a device as "being watched".
+     * Uses cache with 15s TTL — expires automatically if admin stops pinging.
+     */
+    public function requestStream(Request $request)
+    {
+        $request->validate([
+            'hardware_id' => 'required|string',
+            'watching' => 'required|boolean',
+        ]);
+
+        $cacheKey = 'stream_requested_' . $request->hardware_id;
+
+        if ($request->watching) {
+            Cache::put($cacheKey, true, 15); // 15 second TTL
+        } else {
+            Cache::forget($cacheKey);
+        }
+
         return response()->json(['status' => 'ok']);
     }
 
@@ -70,3 +102,4 @@ class MonitoringController extends Controller
         return response()->json(['status' => 'sent']);
     }
 }
+

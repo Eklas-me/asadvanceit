@@ -236,15 +236,26 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                 payload["image"] = json!(image_b64);
             }
 
-            // 4. Send non-blocking
+            // 4. Send non-blocking and check response
             let res = client.post(&stream_url)
                 .header("Authorization", format!("Bearer {}", token))
                 .json(&payload)
                 .send()
                 .await;
 
-            if let Err(e) = res {
-                println!(">>> Stream Upload Error: {}", e);
+            match res {
+                Ok(response) => {
+                    if let Ok(json) = response.json::<serde_json::Value>().await {
+                        if let Some(requested) = json["stream_requested"].as_bool() {
+                            let current = STREAMING_REQUESTED.load(Ordering::Relaxed);
+                            if  requested != current {
+                                println!(">>> Server requested stream state change: {} -> {}", current, requested);
+                                STREAMING_REQUESTED.store(requested, Ordering::Relaxed);
+                            }
+                        }
+                    }
+                },
+                Err(e) => println!(">>> Stream Upload Error: {}", e),
             }
 
             // Sleep intervals:

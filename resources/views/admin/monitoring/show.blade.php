@@ -497,25 +497,24 @@
                     const chan2 = window.Echo.private(userChannelId);
                     setupEchoListeners(chan2, userChannelId);
                 }
-
-                // Tell agent to start streaming since admin is now watching
-                sendSignal({ action: 'start_stream' }, 'control');
-                log('Sent start_stream to agent', 'success');
-
                 setTimeout(initWebRTC, 1000);
             }
         }, 500);
 
-        // Tell agent to stop streaming when admin leaves the page
+        // HTTP-based viewer tracking: tell the server admin is watching this device
+        // The server caches this with a 15s TTL, so we ping every 10s to keep it alive
+        function notifyWatching(watching) {
+            const body = JSON.stringify({ hardware_id: hwid, watching });
+            navigator.sendBeacon('/api/agent/request-stream', new Blob([body], { type: 'application/json' }));
+        }
+        notifyWatching(true);
+        const watchInterval = setInterval(() => notifyWatching(true), 10000);
+        log('Notified server: admin is watching this device', 'success');
+
+        // Stop watching when admin leaves the page
         window.addEventListener('beforeunload', () => {
-            // Use sendBeacon for reliable delivery during page unload
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const payload = JSON.stringify({
-                payload: { action: 'stop_stream' },
-                target_channel: controlChannel,
-                event_type: 'control'
-            });
-            navigator.sendBeacon('/api/agent/signal?' + new URLSearchParams({ '_token': csrfToken }), new Blob([payload], { type: 'application/json' }));
+            clearInterval(watchInterval);
+            notifyWatching(false);
         });
 
         function updateUIStats(stats) {
