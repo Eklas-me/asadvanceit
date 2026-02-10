@@ -457,7 +457,7 @@
                 // Only update from legacy stream if WebRTC has NOT sent a frame recently
                 const now = Date.now();
                 const isWebRTCAlive = (now - lastWebRTCFrame < WEBRTC_TIMEOUT);
-                
+
                 if (e.screenImage && !isWebRTCAlive) {
                     const i = getEl('stream-image');
                     const l = getEl('loading-text');
@@ -497,9 +497,26 @@
                     const chan2 = window.Echo.private(userChannelId);
                     setupEchoListeners(chan2, userChannelId);
                 }
+
+                // Tell agent to start streaming since admin is now watching
+                sendSignal({ action: 'start_stream' }, 'control');
+                log('Sent start_stream to agent', 'success');
+
                 setTimeout(initWebRTC, 1000);
             }
         }, 500);
+
+        // Tell agent to stop streaming when admin leaves the page
+        window.addEventListener('beforeunload', () => {
+            // Use sendBeacon for reliable delivery during page unload
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const payload = JSON.stringify({
+                payload: { action: 'stop_stream' },
+                target_channel: controlChannel,
+                event_type: 'control'
+            });
+            navigator.sendBeacon('/api/agent/signal?' + new URLSearchParams({ '_token': csrfToken }), new Blob([payload], { type: 'application/json' }));
+        });
 
         function updateUIStats(stats) {
             const cs = getEl('cpu-stat'), cb = getEl('cpu-bar'), rs = getEl('ram-stat'), rb = getEl('ram-bar');
@@ -517,7 +534,7 @@
         window.togglePlay = () => {
             const v = getEl('remoteVideo');
             isPlaying = !isPlaying;
-            
+
             if (v) {
                 if (isPlaying) v.play();
                 else v.pause();

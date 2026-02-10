@@ -33,7 +33,7 @@ class MonitoringController extends Controller
     public function uploadStream(Request $request)
     {
         $request->validate([
-            'image' => 'required|string',
+            'image' => 'nullable|string',
             'stats' => 'required|array',
             'hardware_id' => 'nullable|string',
         ]);
@@ -63,8 +63,9 @@ class MonitoringController extends Controller
     {
         $payload = $request->payload;
         $targetChannel = $request->target_channel;
+        $eventType = $request->input('event_type', 'webrtc.signal');
 
-        broadcast(new \App\Events\WebRTCSignaling($payload, $targetChannel))->toOthers();
+        broadcast(new \App\Events\WebRTCSignaling($payload, $targetChannel, $eventType))->toOthers();
 
         return response()->json(['status' => 'sent']);
     }

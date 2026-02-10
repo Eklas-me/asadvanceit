@@ -13,6 +13,7 @@ use tokio::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 static WEBRTC_ACTIVE: AtomicBool = AtomicBool::new(false);
 static WEBRTC_PAUSED: AtomicBool = AtomicBool::new(false);
+static STREAMING_REQUESTED: AtomicBool = AtomicBool::new(false);
 
 mod dxgi;
 mod encoder;
@@ -203,13 +204,14 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                 "ram_total": sys.total_memory()
             });
 
-            // 2. Logic: Only capture image if WebRTC is NOT active AND NOT paused
+            // 2. Only capture image if admin requested streaming AND WebRTC is NOT active
             let is_webrtc_active = WEBRTC_ACTIVE.load(Ordering::Relaxed);
             let is_webrtc_paused = WEBRTC_PAUSED.load(Ordering::Relaxed);
+            let is_streaming_requested = STREAMING_REQUESTED.load(Ordering::Relaxed);
             let mut image_b64 = String::new();
 
-            // Only capture JPEGs if no high-speed stream is running or if the user is just monitoring in background
-            if !is_webrtc_active && !is_webrtc_paused {
+            // Only capture JPEGs if admin requested it AND no WebRTC stream is running
+            if is_streaming_requested && !is_webrtc_active && !is_webrtc_paused {
                 let screens = screenshots::Screen::all().unwrap_or_default();
                 if let Some(screen) = screens.first() {
                     if let Ok(image) = screen.capture() {
@@ -245,10 +247,17 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                 println!(">>> Stream Upload Error: {}", e);
             }
 
-            // Sleep: 
-            // - 2s if WebRTC active or paused (saving network)
-            // - 1s (1000ms) if in pure background monitoring mode (prevent hammering at 33ms)
-            let sleep_ms = if is_webrtc_active || is_webrtc_paused { 2000 } else { 1000 };
+            // Sleep intervals:
+            // - 5s if NOT streaming (idle mode, just stats, saves bandwidth)
+            // - 2s if WebRTC active or paused
+            // - 1s if streaming via JPEG fallback
+            let sleep_ms = if !is_streaming_requested {
+                5000
+            } else if is_webrtc_active || is_webrtc_paused {
+                2000
+            } else {
+                1000
+            };
             tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
         }
     });
@@ -392,6 +401,16 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                     "start_capture" => {
                                                         println!(">>> RESUMING STREAM");
                                                         WEBRTC_PAUSED.store(false, Ordering::Relaxed);
+                                                    },
+                                                    "start_stream" => {
+                                                        println!(">>> ADMIN REQUESTED STREAM START");
+                                                        STREAMING_REQUESTED.store(true, Ordering::Relaxed);
+                                                        WEBRTC_PAUSED.store(false, Ordering::Relaxed);
+                                                    },
+                                                    "stop_stream" => {
+                                                        println!(">>> ADMIN REQUESTED STREAM STOP");
+                                                        STREAMING_REQUESTED.store(false, Ordering::Relaxed);
+                                                        WEBRTC_PAUSED.store(true, Ordering::Relaxed);
                                                     },
                                                     _ => {}
                                                 }
