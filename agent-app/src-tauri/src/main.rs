@@ -10,7 +10,8 @@ use base64::{Engine as _, engine::general_purpose};
 // use windows::Win32::Graphics::Direct3D11::{ID3D11Texture2D, D3D11_TEXTURE2D_DESC};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+static WEBRTC_GENERATION: AtomicUsize = AtomicUsize::new(0);
 static WEBRTC_ACTIVE: AtomicBool = AtomicBool::new(false);
 static WEBRTC_PAUSED: AtomicBool = AtomicBool::new(false);
 static STREAMING_REQUESTED: AtomicBool = AtomicBool::new(false);
@@ -190,6 +191,7 @@ async fn open_browser(url: String) -> Result<(), String> {
 fn start_monitoring_background(stream_url: String, token: String, hardware_id: String) {
     tokio::spawn(async move {
         println!(">>> Starting monitoring loop to {}", stream_url);
+        println!(">>> Agent Version: 2.1 (On-Demand + Zombie Fix)");
         let client = reqwest::Client::new();
         let mut sys = System::new_all();
         
@@ -332,6 +334,9 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                 *mg = Some(manager);
                                                                 WEBRTC_ACTIVE.store(true, Ordering::Relaxed);
                                                                 
+                                                                // Increment generation to kill old threads
+                                                                let my_gen = WEBRTC_GENERATION.fetch_add(1, Ordering::Relaxed) + 1;
+
                                                                 // Start Stream Loop
                                                                 let mgr_clone = Arc::clone(&webrtc_manager);
                                                                 let rt_handle = tokio::runtime::Handle::current();
@@ -342,6 +347,12 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                                                     let encoder = MFEncoder::new(1280, 720).expect("MF Encoder Init Failed");
                                                                     
                                                                     loop {
+                                                                        // Check generation
+                                                                        if WEBRTC_GENERATION.load(Ordering::Relaxed) != my_gen {
+                                                                            println!(">>> Stopping Zombie WebRTC Thread (Gen: {})", my_gen);
+                                                                            break;
+                                                                        }
+
                                                                         let result = rt_handle.block_on(async {
                                                                             let mg = mgr_clone.lock().await;
                                                                             if mg.is_none() { return None; }
