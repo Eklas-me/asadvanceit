@@ -14,8 +14,8 @@ class WebRTCSignaling implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $payload;
-    public $targetChannel;
-    public $eventType;
+    protected $targetChannel;
+    protected $eventType;
 
     /**
      * Create a new event instance.
@@ -29,6 +29,15 @@ class WebRTCSignaling implements ShouldBroadcastNow
         $this->payload = $payload;
         $this->targetChannel = $targetChannel;
         $this->eventType = $eventType;
+    }
+
+    /**
+     * Data to broadcast - flatten payload so fields like type, sdp, action
+     * are directly accessible (e.g. data.type instead of data.payload.type)
+     */
+    public function broadcastWith(): array
+    {
+        return is_array($this->payload) ? $this->payload : [];
     }
 
     /**
