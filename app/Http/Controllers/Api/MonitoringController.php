@@ -59,13 +59,17 @@ class MonitoringController extends Controller
 
         // Check if an admin is actively watching this device
         $streamRequested = false;
+        $streamPaused = false;
+
         if ($request->hardware_id) {
             $streamRequested = Cache::get('stream_requested_' . $request->hardware_id, false);
+            $streamPaused = Cache::get('stream_paused_' . $request->hardware_id, false);
         }
 
         return response()->json([
             'status' => 'ok',
             'stream_requested' => $streamRequested,
+            'stream_paused' => $streamPaused,
         ]);
     }
 
@@ -78,14 +82,22 @@ class MonitoringController extends Controller
         $request->validate([
             'hardware_id' => 'required|string',
             'watching' => 'required|boolean',
+            'paused' => 'nullable|boolean',
         ]);
 
         $cacheKey = 'stream_requested_' . $request->hardware_id;
+        $pausedKey = 'stream_paused_' . $request->hardware_id;
 
         if ($request->watching) {
             Cache::put($cacheKey, true, 15); // 15 second TTL
+
+            // Store paused state if provided
+            if ($request->has('paused')) {
+                Cache::put($pausedKey, $request->paused, 15);
+            }
         } else {
             Cache::forget($cacheKey);
+            Cache::forget($pausedKey);
         }
 
         return response()->json(['status' => 'ok']);

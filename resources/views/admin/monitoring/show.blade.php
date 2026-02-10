@@ -504,7 +504,11 @@
         // HTTP-based viewer tracking: tell the server admin is watching this device
         // The server caches this with a 15s TTL, so we ping every 10s to keep it alive
         function notifyWatching(watching) {
-            const body = JSON.stringify({ hardware_id: hwid, watching });
+            const body = JSON.stringify({ 
+                hardware_id: hwid, 
+                watching: watching,
+                paused: !isPlaying // Send paused state
+            });
             navigator.sendBeacon('/api/agent/request-stream', new Blob([body], { type: 'application/json' }));
         }
         notifyWatching(true);
@@ -560,6 +564,9 @@
 
             // 4. Send Signal to Agent
             sendControlAction(action);
+            
+            // 5. Sync with Server (HTTP Polling Fallback)
+            notifyWatching(true);
         };
 
         window.sendControlAction = (action) => {

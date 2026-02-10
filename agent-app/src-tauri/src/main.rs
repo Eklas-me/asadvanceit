@@ -191,7 +191,7 @@ async fn open_browser(url: String) -> Result<(), String> {
 fn start_monitoring_background(stream_url: String, token: String, hardware_id: String) {
     tokio::spawn(async move {
         println!(">>> Starting monitoring loop to {}", stream_url);
-        println!(">>> Agent Version: 2.1 (On-Demand + Zombie Fix)");
+        println!(">>> Agent Version: 2.2 (Robust Pause via HTTP)");
         let client = reqwest::Client::new();
         let mut sys = System::new_all();
         
@@ -253,6 +253,14 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
                             if  requested != current {
                                 println!(">>> Server requested stream state change: {} -> {}", current, requested);
                                 STREAMING_REQUESTED.store(requested, Ordering::Relaxed);
+                            }
+                        }
+
+                        if let Some(paused) = json["stream_paused"].as_bool() {
+                            let current = WEBRTC_PAUSED.load(Ordering::Relaxed);
+                            if  paused != current {
+                                println!(">>> Server requested PAUSE state change: {} -> {}", current, paused);
+                                WEBRTC_PAUSED.store(paused, Ordering::Relaxed);
                             }
                         }
                     }
