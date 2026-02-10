@@ -531,17 +531,35 @@
         }
 
         window.togglePlay = () => {
-            const v = getEl('remoteVideo');
+            console.log('togglePlay called, current state:', isPlaying);
+            
+            // 1. Update State
             isPlaying = !isPlaying;
+            const action = isPlaying ? 'start_capture' : 'stop_capture';
+            
+            // 2. Update UI immediately
+            const wrapper = document.getElementById('playerWrapper');
+            const icon = document.getElementById('playIcon');
+            
+            if (wrapper) wrapper.classList.toggle('paused', !isPlaying);
+            if (icon) icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
 
+            // 3. Handle Video Element (safe)
+            const v = getEl('remoteVideo');
             if (v) {
-                if (isPlaying) v.play();
-                else v.pause();
+                try {
+                    if (isPlaying) {
+                        v.play().catch(e => console.error("Video Play Error:", e));
+                    } else {
+                        v.pause();
+                    }
+                } catch (e) {
+                    console.error("Video Operation Error:", e);
+                }
             }
 
-            document.getElementById('playerWrapper').classList.toggle('paused', !isPlaying);
-            document.getElementById('playIcon').className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
-            sendControlAction(isPlaying ? 'start_capture' : 'stop_capture');
+            // 4. Send Signal to Agent
+            sendControlAction(action);
         };
 
         window.sendControlAction = (action) => {
