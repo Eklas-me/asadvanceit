@@ -198,7 +198,7 @@ async fn check_session(app_handle: tauri::AppHandle) -> Result<Option<UserInfo>,
             println!(">>> Found existing session for {}", email);
             
             // Re-trigger monitoring (shared logic with login)
-            let base_url = "https://test.asadvanceit.com"; // Default for now
+            let base_url = "https://asadvanceit.com"; // Default for now
             let stream_url = format!("{}/api/agent/stream", base_url);
             let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
             start_monitoring_background(stream_url, token.clone(), hwid);
@@ -614,7 +614,7 @@ async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
     let (token, api_url) = match session {
         Some(s) => (
             s.access_token.unwrap_or_default(),
-            s.api_url.unwrap_or_else(|| "https://test.asadvanceit.com".to_string())
+            s.api_url.unwrap_or_else(|| "https://asadvanceit.com".to_string())
         ),
         None => {
             println!(">>> USB Notification Failed: No active session found.");
@@ -749,7 +749,7 @@ fn main() {
 
             // Start Signaling in Background
             let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
-            start_signaling_background(hwid, "https://test.asadvanceit.com".to_string());
+            start_signaling_background(hwid, "https://asadvanceit.com".to_string());
 
             // Start USB Monitoring
             start_usb_monitor(app.handle().clone());

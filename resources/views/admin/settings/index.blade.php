@@ -142,7 +142,7 @@
                             <label class="form-label">OR Manual Download URL</label>
                             <input type="url" name="agent_download_url" class="form-control"
                                 value="{{ \App\Models\SiteSetting::get('agent_download_url') }}" 
-                                placeholder="https://test.asadvanceit.com/downloads/agent-1.0.1.msi.zip">
+                                placeholder="https://asadvanceit.com/downloads/agent-1.0.1.msi.zip">
                             <small class="text-muted">Only use this if you have uploaded the file manually to hosting.</small>
                         </div>
 

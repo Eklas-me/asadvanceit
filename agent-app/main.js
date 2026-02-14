@@ -22,7 +22,7 @@ const loginArea = document.querySelector('.login-area');
 const loggedInArea = document.querySelector('.logged-in-area');
 
 // API URL - Change this to your production URL when deploying
-const BASE_URL = 'https://test.asadvanceit.com';
+const BASE_URL = 'https://asadvanceit.com';
 // const BASE_URL = 'http://127.0.0.1:8000';
 const API_URL = `${BASE_URL}/api/agent/login`;
 
