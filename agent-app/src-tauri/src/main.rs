@@ -479,6 +479,7 @@ async fn send_signal(base_url: &str, hwid: &str, payload: serde_json::Value) {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|_app| {
             // Start Signaling in Background
             let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());

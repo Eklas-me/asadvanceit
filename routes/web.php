@@ -109,6 +109,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/admin/settings/cache/clear', [App\Http\Controllers\SettingsController::class, 'clearCache'])->name('admin.settings.clear_cache');
         Route::post('/admin/settings/telegram', [App\Http\Controllers\SettingsController::class, 'updateTelegram'])->name('admin.settings.update_telegram');
         Route::post('/admin/settings/sheets', [App\Http\Controllers\SettingsController::class, 'updateSheetVisibility'])->name('admin.settings.update_sheets');
+        Route::post('/admin/settings/agent-app', [App\Http\Controllers\SettingsController::class, 'updateAgentApp'])->name('admin.settings.update_agent_app');
 
         // Google Sheets CRUD Routes
         Route::post('/admin/settings/sheets/store', [App\Http\Controllers\SettingsController::class, 'storeSheet'])->name('admin.settings.sheets.store');

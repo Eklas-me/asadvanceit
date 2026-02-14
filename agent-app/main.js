@@ -140,6 +140,39 @@ form.addEventListener('submit', async (e) => {
     }
 });
 
+async function checkForUpdates() {
+    console.log('Checking for updates...');
+    try {
+        const updater = window.__TAURI__.updater;
+        if (!updater) {
+            console.error('Updater plugin not found');
+            return;
+        }
+
+        const update = await updater.check();
+        if (update) {
+            console.log(`Update available: ${update.version}`);
+
+            const confirmed = confirm(`A new version (${update.version}) is available. Would you like to install it now?\n\nRelease Notes: ${update.body || 'None'}`);
+
+            if (confirmed) {
+                console.log('Downloading and installing update...');
+                // You might want to show a loading state here
+                await update.downloadAndInstall();
+                console.log('Update installed. Restarting...');
+            }
+        } else {
+            console.log('No updates available.');
+        }
+    } catch (e) {
+        console.error('Failed to check for updates', e);
+    }
+}
+
+// Initial session check and update check on startup
+checkExistingSession();
+checkForUpdates();
+
 logoutBtn.addEventListener('click', async () => {
     const invoke = getTauriInvoke();
     if (!invoke) return;

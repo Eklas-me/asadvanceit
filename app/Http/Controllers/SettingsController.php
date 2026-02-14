@@ -231,5 +231,29 @@ class SettingsController extends Controller
             return back()->with('error', 'Failed to toggle sheet visibility.');
         }
     }
+
+    /**
+     * Update Agent App Settings (Version, Download URL, Signature)
+     */
+    public function updateAgentApp(Request $request)
+    {
+        $request->validate([
+            'agent_version' => 'required|string|max:50',
+            'agent_download_url' => 'required|url',
+            'agent_signature' => 'required|string',
+            'agent_notes' => 'nullable|string',
+        ]);
+
+        try {
+            \App\Models\SiteSetting::set('agent_version', $request->agent_version);
+            \App\Models\SiteSetting::set('agent_download_url', $request->agent_download_url);
+            \App\Models\SiteSetting::set('agent_signature', $request->agent_signature);
+            \App\Models\SiteSetting::set('agent_notes', $request->agent_notes);
+
+            return redirect()->route('admin.settings.index', ['tab' => 'agent-app'])->with('success', 'Agent App settings updated successfully!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to update settings: ' . $e->getMessage());
+        }
+    }
 }
 
