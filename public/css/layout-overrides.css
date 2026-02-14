@@ -104,23 +104,30 @@
     font-size: 16px;
 }
 
-}
-
 .nav-collapse .nav-item a {
     padding: 8px 16px 8px 48px;
     font-size: 13px;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .nav-collapse .nav-item a {
+    color: var(--text-secondary) !important;
 }
 
 .collapse {
-    transition: height 0.3s ease;
+    /* .collapse transition is handled by Bootstrap 5 natively */
 }
 
-.collapse:not(.show) {
-    display: none;
+.collapse:not(.show):not(.collapsing) {
+    display: none !important;
 }
 
-.collapse.show {
-    display: block;
+.collapse.show,
+.collapse.collapsing {
+    display: block !important;
 }
 
 .nav-item>a[data-bs-toggle="collapse"] {

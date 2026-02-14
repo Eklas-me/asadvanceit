@@ -1,4 +1,5 @@
 "use strict";
+console.log("KAIADMIN JS LOADED - VERSION V6");
 
 var logoHeaderContent = $('.sidebar .logo-header').html();
 $('.main-header .logo-header').html(logoHeaderContent);
@@ -293,11 +294,11 @@ $(document).ready(function () {
 	// addClass if nav-item click and has subnav
 
 	// Synchronize .submenu class with Bootstrap collapse state
-	$(".sidebar .nav-item .collapse").on('shown.bs.collapse', function () {
+	$(".sidebar .nav-item .collapse").on('show.bs.collapse', function () {
 		$(this).parent().addClass('submenu');
 	});
 
-	$(".sidebar .nav-item .collapse").on('hidden.bs.collapse', function () {
+	$(".sidebar .nav-item .collapse").on('hide.bs.collapse', function () {
 		$(this).parent().removeClass('submenu');
 	});
 

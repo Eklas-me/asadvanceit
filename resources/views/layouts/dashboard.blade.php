@@ -62,7 +62,8 @@
     <script src="{{ asset('assets/js/core/bootstrap.min.js') }}"></script>
 
     <!-- Kaiadmin JS -->
-    <script src="{{ asset('assets/js/kaiadmin.min.js') }}"></script>
+    <!-- Kaiadmin JS -->
+    <script src="{{ asset('assets/js/kaiadmin.js') }}?v=6"></script>
 
     <script>
         // Theme Detection and Toggle Function

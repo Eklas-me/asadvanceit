@@ -696,21 +696,21 @@ body {
         margin-right: 6px;
         transition: all .5s;
         color: #8d9498; }
-      .sidebar .nav > .nav-item a[data-toggle=collapse][aria-expanded=true], .sidebar[data-background-color="white"] .nav > .nav-item a[data-toggle=collapse][aria-expanded=true] {
+      .sidebar .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true], .sidebar[data-background-color="white"] .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] {
         background: transparent; }
-        .sidebar .nav > .nav-item a[data-toggle=collapse][aria-expanded=true] p, .sidebar[data-background-color="white"] .nav > .nav-item a[data-toggle=collapse][aria-expanded=true] p {
+        .sidebar .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] p, .sidebar[data-background-color="white"] .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] p {
           color: #575962; }
-        .sidebar .nav > .nav-item a[data-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav > .nav-item a[data-toggle=collapse][aria-expanded=true] i {
+        .sidebar .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i {
           color: #4d7cfe; }
-        .sidebar .nav > .nav-item a[data-toggle=collapse][aria-expanded=true] .caret, .sidebar[data-background-color="white"] .nav > .nav-item a[data-toggle=collapse][aria-expanded=true] .caret {
+        .sidebar .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] .caret, .sidebar[data-background-color="white"] .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] .caret {
           filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=2);
           -webkit-transform: rotate(-180deg);
           transform: rotate(-180deg); }
-        .sidebar .nav > .nav-item a[data-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav > .nav-item a[data-toggle=collapse][aria-expanded=true]:before {
+        .sidebar .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before {
           background: #1d7af3; }
-    .sidebar .nav.nav-primary > .nav-item a:hover i, .sidebar .nav.nav-primary > .nav-item a:focus i, .sidebar .nav.nav-primary > .nav-item a[data-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item a[data-toggle=collapse][aria-expanded=true] i {
+    .sidebar .nav.nav-primary > .nav-item a:hover i, .sidebar .nav.nav-primary > .nav-item a:focus i, .sidebar .nav.nav-primary > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i {
       color: #1572E8 !important; }
-    .sidebar .nav.nav-primary > .nav-item a[data-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item a[data-toggle=collapse][aria-expanded=true]:before {
+    .sidebar .nav.nav-primary > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before {
       background: #1572E8 !important; }
     .sidebar .nav.nav-primary > .nav-item.active a:before, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item.active a:before {
       background: #1572E8 !important; }
@@ -718,9 +718,9 @@ body {
       color: #1572E8 !important; }
     .sidebar .nav.nav-primary > .nav-item .nav-collapse li.active > a, .sidebar[data-background-color="white"] .nav.nav-primary > .nav-item .nav-collapse li.active > a {
       color: #1572E8 !important; }
-    .sidebar .nav.nav-secondary > .nav-item a:hover i, .sidebar .nav.nav-secondary > .nav-item a:focus i, .sidebar .nav.nav-secondary > .nav-item a[data-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item a[data-toggle=collapse][aria-expanded=true] i {
+    .sidebar .nav.nav-secondary > .nav-item a:hover i, .sidebar .nav.nav-secondary > .nav-item a:focus i, .sidebar .nav.nav-secondary > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i {
       color: #6861CE !important; }
-    .sidebar .nav.nav-secondary > .nav-item a[data-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item a[data-toggle=collapse][aria-expanded=true]:before {
+    .sidebar .nav.nav-secondary > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before {
       background: #6861CE !important; }
     .sidebar .nav.nav-secondary > .nav-item.active a:before, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item.active a:before {
       background: #6861CE !important; }
@@ -728,9 +728,9 @@ body {
       color: #6861CE !important; }
     .sidebar .nav.nav-secondary > .nav-item .nav-collapse li.active > a, .sidebar[data-background-color="white"] .nav.nav-secondary > .nav-item .nav-collapse li.active > a {
       color: #6861CE !important; }
-    .sidebar .nav.nav-info > .nav-item a:hover i, .sidebar .nav.nav-info > .nav-item a:focus i, .sidebar .nav.nav-info > .nav-item a[data-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item a[data-toggle=collapse][aria-expanded=true] i {
+    .sidebar .nav.nav-info > .nav-item a:hover i, .sidebar .nav.nav-info > .nav-item a:focus i, .sidebar .nav.nav-info > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i {
       color: #48ABF7 !important; }
-    .sidebar .nav.nav-info > .nav-item a[data-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item a[data-toggle=collapse][aria-expanded=true]:before {
+    .sidebar .nav.nav-info > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before {
       background: #48ABF7 !important; }
     .sidebar .nav.nav-info > .nav-item.active a:before, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item.active a:before {
       background: #48ABF7 !important; }
@@ -738,9 +738,9 @@ body {
       color: #48ABF7 !important; }
     .sidebar .nav.nav-info > .nav-item .nav-collapse li.active > a, .sidebar[data-background-color="white"] .nav.nav-info > .nav-item .nav-collapse li.active > a {
       color: #48ABF7 !important; }
-    .sidebar .nav.nav-success > .nav-item a:hover i, .sidebar .nav.nav-success > .nav-item a:focus i, .sidebar .nav.nav-success > .nav-item a[data-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item a[data-toggle=collapse][aria-expanded=true] i {
+    .sidebar .nav.nav-success > .nav-item a:hover i, .sidebar .nav.nav-success > .nav-item a:focus i, .sidebar .nav.nav-success > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i {
       color: #31CE36 !important; }
-    .sidebar .nav.nav-success > .nav-item a[data-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item a[data-toggle=collapse][aria-expanded=true]:before {
+    .sidebar .nav.nav-success > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before {
       background: #31CE36 !important; }
     .sidebar .nav.nav-success > .nav-item.active a:before, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item.active a:before {
       background: #31CE36 !important; }
@@ -748,9 +748,9 @@ body {
       color: #31CE36 !important; }
     .sidebar .nav.nav-success > .nav-item .nav-collapse li.active > a, .sidebar[data-background-color="white"] .nav.nav-success > .nav-item .nav-collapse li.active > a {
       color: #31CE36 !important; }
-    .sidebar .nav.nav-warning > .nav-item a:hover i, .sidebar .nav.nav-warning > .nav-item a:focus i, .sidebar .nav.nav-warning > .nav-item a[data-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item a[data-toggle=collapse][aria-expanded=true] i {
+    .sidebar .nav.nav-warning > .nav-item a:hover i, .sidebar .nav.nav-warning > .nav-item a:focus i, .sidebar .nav.nav-warning > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i {
       color: #FFAD46 !important; }
-    .sidebar .nav.nav-warning > .nav-item a[data-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item a[data-toggle=collapse][aria-expanded=true]:before {
+    .sidebar .nav.nav-warning > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before {
       background: #FFAD46 !important; }
     .sidebar .nav.nav-warning > .nav-item.active a:before, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item.active a:before {
       background: #FFAD46 !important; }
@@ -758,9 +758,9 @@ body {
       color: #FFAD46 !important; }
     .sidebar .nav.nav-warning > .nav-item .nav-collapse li.active > a, .sidebar[data-background-color="white"] .nav.nav-warning > .nav-item .nav-collapse li.active > a {
       color: #FFAD46 !important; }
-    .sidebar .nav.nav-danger > .nav-item a:hover i, .sidebar .nav.nav-danger > .nav-item a:focus i, .sidebar .nav.nav-danger > .nav-item a[data-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item a[data-toggle=collapse][aria-expanded=true] i {
+    .sidebar .nav.nav-danger > .nav-item a:hover i, .sidebar .nav.nav-danger > .nav-item a:focus i, .sidebar .nav.nav-danger > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item a:hover i, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item a:focus i, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item a[data-bs-toggle=collapse][aria-expanded=true] i {
       color: #F25961 !important; }
-    .sidebar .nav.nav-danger > .nav-item a[data-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item a[data-toggle=collapse][aria-expanded=true]:before {
+    .sidebar .nav.nav-danger > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before {
       background: #F25961 !important; }
     .sidebar .nav.nav-danger > .nav-item.active a:before, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item.active a:before {
       background: #F25961 !important; }
@@ -768,7 +768,7 @@ body {
       color: #F25961 !important; }
     .sidebar .nav.nav-danger > .nav-item .nav-collapse li.active > a, .sidebar[data-background-color="white"] .nav.nav-danger > .nav-item .nav-collapse li.active > a {
       color: #F25961 !important; }
-  .sidebar .nav > .nav-item.active > a:before, .sidebar[data-background-color="white"] .nav > .nav-item.active > a:before, .sidebar .nav > .nav-item.active:hover > a:before, .sidebar[data-background-color="white"] .nav > .nav-item.active:hover > a:before, .sidebar .nav > .nav-item a[data-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav > .nav-item a[data-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav > .nav-item.active > a:before, .sidebar[data-background-color="white"] .nav > .nav-item.active:hover > a:before, .sidebar[data-background-color="white"] .nav > .nav-item a[data-toggle=collapse][aria-expanded=true]:before {
+  .sidebar .nav > .nav-item.active > a:before, .sidebar[data-background-color="white"] .nav > .nav-item.active > a:before, .sidebar .nav > .nav-item.active:hover > a:before, .sidebar[data-background-color="white"] .nav > .nav-item.active:hover > a:before, .sidebar .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before, .sidebar[data-background-color="white"] .nav > .nav-item.active > a:before, .sidebar[data-background-color="white"] .nav > .nav-item.active:hover > a:before, .sidebar[data-background-color="white"] .nav > .nav-item a[data-bs-toggle=collapse][aria-expanded=true]:before {
     opacity: 1 !important;
     position: absolute;
     z-index: 1;
