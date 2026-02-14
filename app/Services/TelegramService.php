@@ -64,10 +64,12 @@ class TelegramService
      */
     protected function formatLoginMessage($user, $loginData)
     {
-        $message = "🔐 *New Login Detected*\n\n";
+        $message = "✅ *SUCCESSFUL LOGIN*\n";
+        $message .= "━━━━━━━━━━━━━━━━━━\n";
         $message .= "👤 *User:* {$user->name}\n";
         $message .= "📧 *Email:* {$user->email}\n";
-        $message .= "🕐 *Time:* " . now()->format('M d, Y h:i A') . "\n";
+        $message .= "━━━━━━━━━━━━━━━━━━\n";
+        $message .= "🕒 *Time:* " . now()->format('h:i A, M d') . "\n";
         $message .= "🌐 *IP:* {$loginData['ip']}\n";
 
         if (!empty($loginData['location'])) {
@@ -182,17 +184,18 @@ class TelegramService
             $userName = htmlspecialchars($user->name);
             $userEmail = htmlspecialchars($user->email);
 
-            $message = "🔌 <b>USB Device Detected</b>\n\n";
-            $message .= "👤 <b>User:</b> {$userName} ({$userEmail})\n";
-            $message .= "🕐 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n";
-            $message .= "📦 <b>Device:</b> {$usbName}\n";
-            $message .= "📍 <b>Mount:</b> {$mount}\n";
+            $message = "⚠️ <b>EXTERNAL DEVICE CONNECTED</b>\n";
+            $message .= "──────────────────────\n";
+            $message .= "💾 <b>Device:</b> {$usbName}\n";
+            $message .= "💿 <b>Mount:</b> {$mount}\n";
 
             if (isset($usbData['total_space']) && $usbData['total_space'] > 0) {
                 $size = round($usbData['total_space'] / (1024 * 1024 * 1024), 2);
-                $message .= "💾 <b>Size:</b> {$size} GB\n";
+                $message .= "📏 <b>Size:</b> {$size} GB\n";
             }
-
+            $message .= "──────────────────────\n";
+            $message .= "👤 <b>User:</b> {$userName} ({$userEmail})\n";
+            $message .= "🕒 <b>Time:</b> " . now()->format('h:i A, M d') . "\n";
             $message .= "🌐 <b>IP:</b> " . request()->ip() . "\n";
 
             foreach ($this->chatIds as $chatId) {

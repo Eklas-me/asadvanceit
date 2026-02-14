@@ -546,8 +546,9 @@ extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM
     if msg == WM_DEVICECHANGE {
         println!(">>> WM_DEVICECHANGE received: wparam={:X}", wparam.0);
         // 0x07 = DBT_DEVNODES_CHANGED
-        if wparam.0 == DBT_DEVICEARRIVAL || wparam.0 == 0x07 {
-            println!(">>> USB/Device ARRIVAL or CHANGE DETECTED!");
+        // 0x8004 = DBT_DEVICEREMOVECOMPLETE
+        if wparam.0 == DBT_DEVICEARRIVAL || wparam.0 == 0x07 || wparam.0 == 0x8004 {
+            println!(">>> USB/Device ARRIVAL, REMOVAL or CHANGE DETECTED!");
             
             // Trigger the notification
             thread::spawn(|| {
@@ -648,7 +649,14 @@ async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
     {
         let mut known = state.known_devices.lock().unwrap();
         
-        // Find a device that is in current but NOT in known
+        // Find devices that were in known but NOT in current (REMOVED)
+        for key in known.iter() {
+            if !current_device_map.contains_key(key) {
+                println!(">>> DEVICE REMOVED: {}", key);
+            }
+        }
+
+        // Find a device that is in current but NOT in known (NEW)
         for (key, data) in &current_device_map {
             if !known.contains(key) {
                 // Found a new one!
@@ -656,11 +664,6 @@ async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
                 // Prefer selecting this one. If multiple, we create a strategy (largest, or just first)
                 if new_device.is_none() {
                     new_device = Some(data.clone());
-                } else {
-                    // If we already have a candidate, prefer WPD over Disk (assuming WPD is the "tricky" one)
-                    // Or prefer larger size?
-                    // Let's just stick to first found for now, but usually events fire per device.
-                    // Actually, if we plug in an iPhone, only WPD appears.
                 }
             }
         }
@@ -697,7 +700,7 @@ async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
 
         println!(">>> Server responded with status: {}", response.status());
     } else {
-        println!(">>> No NEW devices detected (Existing ones ignored).");
+        println!(">>> Scan Complete. No NEW devices detected vs Known State.");
     }
 
     Ok(())
