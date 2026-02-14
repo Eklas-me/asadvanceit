@@ -119,7 +119,7 @@
                         Manage the auto-update metadata for the Agent App.
                     </p>
 
-                    <form action="{{ route('admin.settings.update_agent_app') }}" method="POST">
+                    <form action="{{ route('admin.settings.update_agent_app') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
                         <div class="mb-3">
@@ -130,10 +130,20 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Download URL (.msi.zip)</label>
+                            <label class="form-label">Update File (Direct Upload)</label>
+                            <input type="file" name="agent_update_file" class="form-control" accept=".zip">
+                            <small class="text-info d-block mt-1">
+                                <i class="fas fa-info-circle me-1"></i> Upload the <code>.msi.zip</code> file generated during build. 
+                                <br>Windows updater requires a compressed <code>.zip</code> file to work.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">OR Manual Download URL</label>
                             <input type="url" name="agent_download_url" class="form-control"
                                 value="{{ \App\Models\SiteSetting::get('agent_download_url') }}" 
-                                placeholder="https://test.asadvanceit.com/downloads/agent-1.0.1.msi.zip" required>
+                                placeholder="https://test.asadvanceit.com/downloads/agent-1.0.1.msi.zip">
+                            <small class="text-muted">Only use this if you have uploaded the file manually to hosting.</small>
                         </div>
 
                         <div class="mb-3">

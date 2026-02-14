@@ -239,14 +239,24 @@ class SettingsController extends Controller
     {
         $request->validate([
             'agent_version' => 'required|string|max:50',
-            'agent_download_url' => 'required|url',
+            'agent_update_file' => 'nullable|file|mimes:zip|max:51200', // Max 50MB
+            'agent_download_url' => 'required_without:agent_update_file|nullable|url',
             'agent_signature' => 'required|string',
             'agent_notes' => 'nullable|string',
         ]);
 
         try {
+            if ($request->hasFile('agent_update_file')) {
+                $file = $request->file('agent_update_file');
+                $filename = 'asadvanceit-agent-' . str_replace('.', '_', $request->agent_version) . '.msi.zip';
+                $path = $file->storeAs('agent-updates', $filename, 'public');
+                $downloadUrl = asset('storage/' . $path);
+                \App\Models\SiteSetting::set('agent_download_url', $downloadUrl);
+            } else {
+                \App\Models\SiteSetting::set('agent_download_url', $request->agent_download_url);
+            }
+
             \App\Models\SiteSetting::set('agent_version', $request->agent_version);
-            \App\Models\SiteSetting::set('agent_download_url', $request->agent_download_url);
             \App\Models\SiteSetting::set('agent_signature', $request->agent_signature);
             \App\Models\SiteSetting::set('agent_notes', $request->agent_notes);
 
