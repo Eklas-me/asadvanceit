@@ -600,11 +600,16 @@ async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
     for disk in &disks {
         let kind = format!("{:?}", disk.kind());
         println!(">>> Found disk: {} ({}) at {}", disk.name().to_string_lossy(), kind, disk.mount_point().to_string_lossy());
+        
         if !matches!(disk.kind(), sysinfo::DiskKind::HDD | sysinfo::DiskKind::SSD) {
-            usb_name = disk.name().to_string_lossy().to_string();
-            mount_point = disk.mount_point().to_string_lossy().to_string();
-            total_space = disk.total_space();
-            println!(">>> Selected as potential USB: {}", usb_name);
+            let current_space = disk.total_space();
+            // Only replace if this disk is larger than the previously selected one
+            if current_space > total_space {
+                usb_name = disk.name().to_string_lossy().to_string();
+                mount_point = disk.mount_point().to_string_lossy().to_string();
+                total_space = current_space;
+                println!(">>> Selected as BEST potential USB: {} | Size: {} bytes", usb_name, total_space);
+            }
         }
     }
 

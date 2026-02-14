@@ -183,7 +183,7 @@ class TelegramService
             $userEmail = htmlspecialchars($user->email);
 
             $message = "🔌 <b>USB Device Detected</b>\n\n";
-            $message .= "👤 <b>Agent:</b> {$userName} ({$userEmail})\n";
+            $message .= "👤 <b>User:</b> {$userName} ({$userEmail})\n";
             $message .= "🕐 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n";
             $message .= "📦 <b>Device:</b> {$usbName}\n";
             $message .= "📍 <b>Mount:</b> {$mount}\n";
