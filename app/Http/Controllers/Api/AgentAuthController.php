@@ -78,9 +78,9 @@ class AgentAuthController extends Controller
                 $agent = new \Jenssegers\Agent\Agent();
                 $loginData = [
                     'ip' => $request->ip(),
-                    'device' => $agent->device() ?: 'Agent App (Desktop)',
-                    'browser' => 'Tauri / Agent App',
-                    'platform' => $agent->platform() ?: 'Windows',
+                    'device' => $request->input('device_name') ?: ($agent->device() ?: 'Unknown Device'),
+                    'browser' => $request->input('browser') ?: 'Advance IT Client',
+                    'platform' => $request->input('os_info') ?: ($agent->platform() ?: 'Windows'),
                     'location' => $this->getLocation($request->ip()),
                 ];
 

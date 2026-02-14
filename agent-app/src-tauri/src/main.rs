@@ -112,11 +112,21 @@ async fn login(app_handle: tauri::AppHandle, email: String, password: String, ap
     println!(">>> Rust: Received login request for {} to URL {}", email, api_url);
     let client = reqwest::Client::new();
     
+    let hostname = hostname::get()
+        .map(|h| h.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| "Unknown PC".to_string());
+    
+    let os_info = format!("{} {}", std::env::consts::OS, std::env::consts::ARCH);
+
     let response = client
         .post(&api_url)
         .json(&serde_json::json!({
             "email": email,
-            "password": password
+            "password": password,
+            "device_name": hostname,
+            "os_info": os_info,
+            "browser": "Advance IT Client", // Hardcoded branding
+            "platform": "Desktop App"
         }))
         .send()
         .await
