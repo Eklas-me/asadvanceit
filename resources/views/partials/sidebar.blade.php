@@ -46,7 +46,7 @@
 
                 <li
                     class="nav-item {{ request()->is('admin/workers*', 'admin/pending-users*', 'admin/suspended-users*', 'admin/rejected-users*') ? 'active' : '' }}">
-                    <a href="#" data-bs-toggle="collapse" data-bs-target="#workersSubmenu"
+                    <a href="javascript:void(0)" data-bs-toggle="collapse" data-bs-target="#workersSubmenu"
                         aria-expanded="{{ request()->is('admin/workers*', 'admin/pending-users*', 'admin/suspended-users*', 'admin/rejected-users*') ? 'true' : 'false' }}">
                         <i class="fas fa-users"></i>
                         <span>Workers</span>
@@ -110,7 +110,7 @@
 
             <!-- Google Sheets Embedding -->
             <li class="nav-item {{ request()->is('sheets*') ? 'active' : '' }}">
-                <a data-bs-toggle="collapse" href="#sheets">
+                <a data-bs-toggle="collapse" data-bs-target="#sheets" href="javascript:void(0)">
                     <i class="fas fa-file-excel"></i>
                     <span>Sheets</span>
                     <span class="caret"><i class="fas fa-chevron-down"
