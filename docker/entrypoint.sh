@@ -9,16 +9,22 @@ mkdir -p /var/www/html/storage/logs
 mkdir -p /var/www/html/storage/framework/cache/data
 mkdir -p /var/www/html/storage/framework/sessions
 mkdir -p /var/www/html/storage/framework/views
+mkdir -p /var/www/html/storage/app/public/agent-updates
 mkdir -p /var/www/html/bootstrap/cache
 
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public
 
 # Generate app key if not set
 if [ -z "$APP_KEY" ]; then
     echo "🔑 Generating application key..."
     php artisan key:generate --force
 fi
+
+# Create storage link if it doesn't exist
+echo "🔗 Creating storage link..."
+rm -rf /var/www/html/public/storage
+php artisan storage:link
 
 # Wait for MySQL to be ready (max 30 seconds)
 echo "🔌 Waiting for MySQL database..."
