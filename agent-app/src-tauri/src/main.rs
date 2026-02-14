@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 // use image::codecs::jpeg::JpegEncoder;
 use image::ImageOutputFormat;
 use serde::{Deserialize, Serialize};
