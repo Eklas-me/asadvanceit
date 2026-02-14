@@ -19,8 +19,8 @@
         rel="stylesheet">
 
     <!-- Aero Minimal Theme CSS -->
-    <link rel="stylesheet" href="{{ asset('css/theme.css') }}" />
-    <link rel="stylesheet" href="{{ asset('css/layout-overrides.css') }}" />
+    <link rel="stylesheet" href="{{ asset('css/theme.css') }}?v=2" />
+    <link rel="stylesheet" href="{{ asset('css/layout-overrides.css') }}?v=2" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
