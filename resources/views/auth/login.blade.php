@@ -355,12 +355,13 @@
                         <i class="fas fa-info-circle" style="font-size: 2.5rem; color: #6366f1; margin-bottom: 1.5rem;"></i>
                         <h3 style="color: #fff; margin-bottom: 1rem;">Workers Access</h3>
                         <p style="color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 2rem;">
-                            Workers cannot log in via the web browser. Please download and install the **Agent App** on your
+                            Workers cannot log in via the web browser. Please download and install the **Advance IT App** on
+                            your
                             PC to start your shift.
                         </p>
                         <a href="{{ route('app.download') }}" class="download-btn">
                             <i class="fas fa-download"></i>
-                            <span>Download Agent App</span>
+                            <span>Download App</span>
                         </a>
                     </div>
                 </div>
@@ -399,7 +400,7 @@
         if (alertBox) {
             // Automatically show admin form if there are login errors
             selectRole('admin');
-            
+
             setTimeout(() => {
                 alertBox.style.opacity = '0';
                 setTimeout(() => alertBox.remove(), 300);

@@ -205,7 +205,7 @@ async fn open_browser(url: String) -> Result<(), String> {
 fn start_monitoring_background(stream_url: String, token: String, hardware_id: String) {
     tokio::spawn(async move {
         println!(">>> Starting monitoring loop to {}", stream_url);
-        println!(">>> Agent Version: 2.2 (Robust Pause via HTTP)");
+        println!(">>> App Version: 2.2 (Robust Pause via HTTP)");
         let client = reqwest::Client::new();
         let mut sys = System::new_all();
         
