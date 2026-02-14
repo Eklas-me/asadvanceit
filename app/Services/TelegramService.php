@@ -34,7 +34,6 @@ class TelegramService
     public function sendLoginNotification($user, $loginData)
     {
         try {
-            // Don't block login if Telegram is not configured
             if (!$this->botToken || empty($this->chatIds)) {
                 Log::warning('Telegram not configured, skipping notification');
                 return false;
@@ -42,18 +41,37 @@ class TelegramService
 
             $message = $this->formatLoginMessage($user, $loginData);
 
+            // Determine photo source
+            $photo = null;
+            if ($user->profile_photo) {
+                // Check if local file exists
+                $path = storage_path('app/public/' . $user->profile_photo);
+                if (!file_exists($path)) {
+                    $path = public_path('uploads/' . $user->profile_photo);
+                }
+
+                if (file_exists($path)) {
+                    $photo = $path;
+                }
+            }
+
+            // Fallback to placeholder if no valid local photo found
+            if (!$photo) {
+                // Generate a placeholder with the full name
+                // Using placehold.co for reliable text rendering
+                $bg = "2ecc71"; // Green for success
+                $fg = "ffffff";
+                $text = urlencode($user->name);
+                $photo = "https://placehold.co/600x200/{$bg}/{$fg}.png?text={$text}&font=roboto";
+            }
+
             // Send to each configured chat ID
             foreach ($this->chatIds as $chatId) {
-                if ($user->profile_photo) {
-                    $this->sendPhotoWithCaption($chatId, $message, $user->profile_photo);
-                } else {
-                    $this->sendMessage($chatId, $message);
-                }
+                $this->sendPhotoWithCaption($chatId, $message, $photo);
             }
 
             return true;
         } catch (\Exception $e) {
-            // Log error but don't throw - don't block login
             Log::error('Telegram notification failed: ' . $e->getMessage());
             return false;
         }
@@ -65,10 +83,8 @@ class TelegramService
     protected function formatLoginMessage($user, $loginData)
     {
         $message = "✅ *SUCCESSFUL LOGIN*\n";
-        $message .= "━━━━━━━━━━━━━━━━━━\n";
         $message .= "👤 *User:* {$user->name}\n";
         $message .= "📧 *Email:* {$user->email}\n";
-        $message .= "━━━━━━━━━━━━━━━━━━\n";
         $message .= "🕒 *Time:* " . now()->format('h:i A, M d') . "\n";
         $message .= "🌐 *IP:* {$loginData['ip']}\n";
 
@@ -116,33 +132,35 @@ class TelegramService
     }
 
     /**
-     * Send photo with caption
+     * Send photo with caption (supports Local File Path or URL)
      */
-    protected function sendPhotoWithCaption($chatId, $caption, $profilePhoto)
+    protected function sendPhotoWithCaption($chatId, $caption, $photoSource)
     {
         $url = "https://api.telegram.org/bot{$this->botToken}/sendPhoto";
 
-        // Get absolute file path
-        // Try storage path first (new system)
-        $photoPath = storage_path('app/public/' . $profilePhoto);
-
-        // Fallback to legacy path if not found in storage
-        if (!file_exists($photoPath) || !is_file($photoPath)) {
-            $photoPath = public_path('uploads/' . $profilePhoto);
-        }
-
-        if (file_exists($photoPath) && is_file($photoPath)) {
-            $response = Http::withoutVerifying()
-                ->attach('photo', file_get_contents($photoPath), basename($photoPath))
-                ->post($url, [
-                    'chat_id' => $chatId,
-                    'caption' => $caption,
-                    'parse_mode' => 'Markdown'
-                ]);
+        // Check if it's a URL
+        if (filter_var($photoSource, FILTER_VALIDATE_URL)) {
+            $response = Http::withoutVerifying()->post($url, [
+                'chat_id' => $chatId,
+                'caption' => $caption,
+                'photo' => $photoSource,
+                'parse_mode' => 'Markdown'
+            ]);
         } else {
-            // Fallback to text only if file not found
-            $this->sendMessage($chatId, $caption);
-            return;
+            // Assume it's a local file path
+            if (file_exists($photoSource) && is_file($photoSource)) {
+                $response = Http::withoutVerifying()
+                    ->attach('photo', file_get_contents($photoSource), basename($photoSource))
+                    ->post($url, [
+                        'chat_id' => $chatId,
+                        'caption' => $caption,
+                        'parse_mode' => 'Markdown'
+                    ]);
+            } else {
+                // Should not happen if logic is correct, but fallback to text
+                $this->sendMessage($chatId, $caption);
+                return;
+            }
         }
 
         if (!$response->successful()) {
