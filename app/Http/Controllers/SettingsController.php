@@ -276,7 +276,7 @@ class SettingsController extends Controller
                     $extension = 'zip';
                 }
 
-                $filename = 'asadvanceit-agent-' . str_replace('.', '_', $request->agent_version) . '.' . $extension;
+                $filename = $file->getClientOriginalName();
 
                 // Store in public/agent-updates
                 $path = $file->storeAs('agent-updates', $filename, 'public');
