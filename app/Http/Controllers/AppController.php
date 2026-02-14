@@ -12,6 +12,14 @@ class AppController extends Controller
      */
     public function downloadAgent()
     {
+        // Get dynamic download URL from settings
+        $dynamicUrl = \App\Models\SiteSetting::get('agent_download_url');
+
+        if ($dynamicUrl) {
+            return redirect($dynamicUrl);
+        }
+
+        // Fallback to legacy path if no dynamic URL is set
         $filePath = public_path('apps/Advanced_IT_Setup.msi');
 
         if (!file_exists($filePath)) {
