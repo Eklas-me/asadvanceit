@@ -237,23 +237,54 @@ class SettingsController extends Controller
      */
     public function updateAgentApp(Request $request)
     {
-        $request->validate([
-            'agent_version' => 'required|string|max:50',
-            'agent_update_file' => 'nullable|file|mimes:zip,msi,exe|max:51200', // Max 50MB
-            'agent_download_url' => 'required_without:agent_update_file|nullable|url',
-            'agent_signature' => 'required|string',
-            'agent_notes' => 'nullable|string',
-        ]);
+        // Increase memory and execution time for large uploads
+        ini_set('memory_limit', '256M');
+        set_time_limit(300);
+
+        // Custom validation messages to help diagnose server-side issues
+        $messages = [
+            'agent_update_file.max' => 'The file size exceeds the allowed limit (100MB).',
+            'agent_update_file.mimes' => 'The file must be a zip, msi, or exe file.',
+            'agent_download_url.required_without' => 'Please provide either an update file or a manual download URL.',
+        ];
+
+        try {
+            $request->validate([
+                'agent_version' => 'required|string|max:50',
+                'agent_update_file' => 'nullable|file|mimes:zip,msi,exe,bin,octet-stream|max:102400', // Increased to 100MB
+                'agent_download_url' => 'required_without:agent_update_file|nullable|url',
+                'agent_signature' => 'required|string',
+                'agent_notes' => 'nullable|string',
+            ], $messages);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Check if the file was missing despite being sent (indicates post_max_size or upload_max_filesize limit hit)
+            if ($request->has('agent_update_file') && !$request->hasFile('agent_update_file')) {
+                $max_post = ini_get('post_max_size');
+                $max_upload = ini_get('upload_max_filesize');
+                return back()->withInput()->with('error', "Upload failed! The file might be larger than your server supports (Current server limits: upload_max_filesize={$max_upload}, post_max_size={$max_post}). Please increase these in your live server settings.");
+            }
+            throw $e;
+        }
 
         try {
             if ($request->hasFile('agent_update_file')) {
                 $file = $request->file('agent_update_file');
                 $extension = $file->getClientOriginalExtension();
+
+                // Fallback for files without extension or octet-stream
+                if (!$extension) {
+                    $extension = 'zip';
+                }
+
                 $filename = 'asadvanceit-agent-' . str_replace('.', '_', $request->agent_version) . '.' . $extension;
+
+                // Store in public/agent-updates
                 $path = $file->storeAs('agent-updates', $filename, 'public');
+
+                // Generate URL
                 $downloadUrl = asset('storage/' . $path);
                 \App\Models\SiteSetting::set('agent_download_url', $downloadUrl);
-            } else {
+            } elseif ($request->agent_download_url) {
                 \App\Models\SiteSetting::set('agent_download_url', $request->agent_download_url);
             }
 
@@ -263,8 +294,8 @@ class SettingsController extends Controller
 
             return redirect()->route('admin.settings.index', ['tab' => 'agent-app'])->with('success', 'Agent App settings updated successfully!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to update settings: ' . $e->getMessage());
+            \Log::error('Agent App Update Error: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Failed to update settings: ' . $e->getMessage());
         }
     }
 }
-
