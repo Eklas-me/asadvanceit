@@ -542,16 +542,22 @@ fn start_usb_monitor(app_handle: tauri::AppHandle) {
 }
 
 extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    // Log every WM_DEVICECHANGE to see if we get anything
     if msg == WM_DEVICECHANGE {
+        println!(">>> WM_DEVICECHANGE received: wparam={:X}", wparam.0);
         if wparam.0 == DBT_DEVICEARRIVAL {
-            println!(">>> USB DEVICE DETECTED! (Instant)");
+            println!(">>> USB DEVICE ARRIVAL DETECTED!");
             
             // Trigger the notification
             thread::spawn(|| {
                 let rt = tokio::runtime::Runtime::new().unwrap();
                 rt.block_on(async {
                     if let Some(handle) = USB_APP_HANDLE.lock().await.as_ref() {
-                        let _ = notify_usb_event(handle.clone()).await;
+                        if let Err(e) = notify_usb_event(handle.clone()).await {
+                            println!(">>> USB Notification Error: {}", e);
+                        }
+                    } else {
+                        println!(">>> USB Notification Failed: AppHandle not found in Mutex");
                     }
                 });
             });
@@ -561,50 +567,52 @@ extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM
 }
 
 async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
+    println!(">>> Preparing USB notification...");
     let session = load_session(&handle);
-    let token = match session {
-        Some(s) => s.access_token.unwrap_or_default(),
-        None => return Err("No session".to_string()),
+    let (token, api_url) = match session {
+        Some(s) => (
+            s.access_token.unwrap_or_default(),
+            s.api_url.unwrap_or_else(|| "https://test.asadvanceit.com".to_string())
+        ),
+        None => {
+            println!(">>> USB Notification Failed: No active session found.");
+            return Err("No session".to_string());
+        }
     };
 
     if token.is_empty() {
+        println!(">>> USB Notification Failed: Access token is empty.");
         return Err("Not logged in".to_string());
     }
 
-    // Give the OS a second to mount the disk
-    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+    println!(">>> Waiting 2 seconds for disk mount...");
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     // Get disk details
     let mut usb_name = "Unknown USB".to_string();
     let mut mount_point = "".to_string();
     let mut total_space = 0;
 
-    // Use sysinfo to scan for removable drives
     let mut disks = sysinfo::Disks::new();
     disks.refresh_list();
 
+    println!(">>> Scanning {} disks...", disks.len());
     for disk in &disks {
-        // Removable drives usually have specific properties or are just the latest arrival
-        // We'll just take the first one that isn't a fixed disk if possible
+        let kind = format!("{:?}", disk.kind());
+        println!(">>> Found disk: {} ({}) at {}", disk.name().to_string_lossy(), kind, disk.mount_point().to_string_lossy());
         if !matches!(disk.kind(), sysinfo::DiskKind::HDD | sysinfo::DiskKind::SSD) {
             usb_name = disk.name().to_string_lossy().to_string();
             mount_point = disk.mount_point().to_string_lossy().to_string();
             total_space = disk.total_space();
-            // Don't break yet, we might find a better one
+            println!(">>> Selected as potential USB: {}", usb_name);
         }
     }
 
-    let api_url = match session {
-        Some(s) => s.api_url.unwrap_or_else(|| "https://test.asadvanceit.com".to_string()),
-        None => "https://test.asadvanceit.com".to_string(),
-    };
+    let client = reqwest::Client::new();
 
-    // Determine USB event URL from login/api URL
-    // We want to replace /api/agent/login with /api/agent/usb-event
     let usb_event_url = if api_url.contains("/api/agent/login") {
         api_url.replace("/api/agent/login", "/api/agent/usb-event")
     } else {
-        // Fallback or generic construction
         format!("{}/api/agent/usb-event", api_url.trim_end_matches('/').trim_end_matches("/api/agent/login"))
     };
 
@@ -614,13 +622,20 @@ async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
         "total_space": total_space,
     });
 
-    println!(">>> Sending USB notification to server: {} with payload: {:?}", usb_event_url, payload);
+    println!(">>> Sending USB notification to: {}", usb_event_url);
 
-    let _ = client.post(&usb_event_url)
+    let response = client.post(&usb_event_url)
         .header("Authorization", format!("Bearer {}", token))
         .json(&payload)
         .send()
-        .await;
+        .await
+        .map_err(|e| format!("Network error: {}", e))?;
+
+    println!(">>> Server responded with status: {}", response.status());
+    if !response.status().is_success() {
+        let body = response.text().await.unwrap_or_default();
+        println!(">>> Error body: {}", body);
+    }
 
     Ok(())
 }

@@ -21,6 +21,7 @@ class USBNotificationController extends Controller
      */
     public function handleUsbEvent(Request $request)
     {
+        \Log::info('USB Event Received from Agent', $request->all());
         $request->validate([
             'name' => 'nullable|string',
             'mount' => 'nullable|string',

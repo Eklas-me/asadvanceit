@@ -92,14 +92,14 @@ class TelegramService
     /**
      * Send message to Telegram
      */
-    protected function sendMessage($chatId, $text)
+    protected function sendMessage($chatId, $text, $parseMode = 'Markdown')
     {
         $url = "https://api.telegram.org/bot{$this->botToken}/sendMessage";
 
         $response = Http::withoutVerifying()->post($url, [
             'chat_id' => $chatId,
             'text' => $text,
-            'parse_mode' => 'Markdown'
+            'parse_mode' => $parseMode
         ]);
 
         if (!$response->successful()) {
@@ -177,21 +177,26 @@ class TelegramService
                 return false;
             }
 
-            $message = "🔌 *USB Device Detected*\n\n";
-            $message .= "👤 *Agent:* {$user->name} ({$user->email})\n";
-            $message .= "🕐 *Time:* " . now()->format('M d, Y h:i A') . "\n";
-            $message .= "📦 *Device:* " . ($usbData['name'] ?? 'Unknown USB') . "\n";
-            $message .= "📍 *Mount:* " . ($usbData['mount'] ?? 'N/A') . "\n";
+            $usbName = htmlspecialchars($usbData['name'] ?? 'Unknown USB');
+            $mount = htmlspecialchars($usbData['mount'] ?? 'N/A');
+            $userName = htmlspecialchars($user->name);
+            $userEmail = htmlspecialchars($user->email);
+
+            $message = "🔌 <b>USB Device Detected</b>\n\n";
+            $message .= "👤 <b>Agent:</b> {$userName} ({$userEmail})\n";
+            $message .= "🕐 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n";
+            $message .= "📦 <b>Device:</b> {$usbName}\n";
+            $message .= "📍 <b>Mount:</b> {$mount}\n";
 
             if (isset($usbData['total_space'])) {
                 $size = round($usbData['total_space'] / (1024 * 1024 * 1024), 2);
-                $message .= "💾 *Size:* {$size} GB\n";
+                $message .= "💾 <b>Size:</b> {$size} GB\n";
             }
 
-            $message .= "🌐 *IP:* " . request()->ip() . "\n";
+            $message .= "🌐 <b>IP:</b> " . request()->ip() . "\n";
 
             foreach ($this->chatIds as $chatId) {
-                $this->sendMessage($chatId, $message);
+                $this->sendMessage($chatId, $message, 'HTML');
             }
 
             return true;
