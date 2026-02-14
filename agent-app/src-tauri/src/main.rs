@@ -23,6 +23,18 @@ mod webrtc_manager;
 use webrtc_manager::WebRTCManager;
 use dxgi::DXGICapture;
 use encoder::MFEncoder;
+
+use windows::Win32::UI::WindowsAndMessaging::{
+    CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, RegisterClassW, 
+    CS_HREDRAW, CS_VREDRAW, CW_USEDEFAULT, WM_DEVICECHANGE, WNDCLASSW, WS_OVERLAPPEDWINDOW,
+    MSG,
+};
+use windows::Win32::System::LibraryLoader::GetModuleHandleW;
+use windows::core::{w};
+use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+
+const DBT_DEVICEARRIVAL: usize = 0x8000;
+static USB_APP_HANDLE: Mutex<Option<tauri::AppHandle>> = Mutex::const_new(None);
 use std::path::PathBuf;
 use std::fs;
 use tauri::Manager;
@@ -34,6 +46,7 @@ struct AppConfig {
     access_token: Option<String>,
     email: Option<String>,
     name: Option<String>,
+    api_url: Option<String>,
 }
 
 fn get_config_path(handle: &tauri::AppHandle) -> PathBuf {
@@ -44,11 +57,12 @@ fn get_config_path(handle: &tauri::AppHandle) -> PathBuf {
     path
 }
 
-fn save_session(handle: &tauri::AppHandle, token: String, email: String, name: String) {
+fn save_session(handle: &tauri::AppHandle, token: String, email: String, name: String, api_url: String) {
     let config = AppConfig {
         access_token: Some(token),
         email: Some(email),
         name: Some(name),
+        api_url: Some(api_url),
     };
     if let Ok(content) = serde_json::to_string(&config) {
         let _ = fs::write(get_config_path(handle), content);
@@ -129,7 +143,7 @@ async fn login(app_handle: tauri::AppHandle, email: String, password: String, ap
         if let Some(token) = access_token.clone() {
             // Save session for persistence
             let name = user_info.as_ref().map(|u| u.name.clone()).unwrap_or_default();
-            save_session(&app_handle, token.clone(), email.clone(), name);
+            save_session(&app_handle, token.clone(), email.clone(), name, api_url.clone());
 
             // Determine stream URL from login URL (replace /login with /stream)
             // Assuming api_url ends with /api/agent/login
@@ -477,6 +491,140 @@ async fn send_signal(base_url: &str, hwid: &str, payload: serde_json::Value) {
         .await;
 }
 
+fn start_usb_monitor(app_handle: tauri::AppHandle) {
+    thread::spawn(move || {
+        unsafe {
+            let instance = GetModuleHandleW(None).unwrap();
+            let window_class = w!("USB_MONITOR_CLASS");
+
+            let wc = WNDCLASSW {
+                hCursor: windows::Win32::UI::WindowsAndMessaging::HCURSOR::default(),
+                hInstance: instance.into(),
+                lpszClassName: window_class,
+                style: CS_HREDRAW | CS_VREDRAW,
+                lpfnWndProc: Some(wnd_proc),
+                ..Default::default()
+            };
+
+            RegisterClassW(&wc);
+
+            let hwnd = CreateWindowExW(
+                windows::Win32::UI::WindowsAndMessaging::WINDOW_EX_STYLE::default(),
+                window_class,
+                w!("USB Monitor"),
+                WS_OVERLAPPEDWINDOW,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                CW_USEDEFAULT,
+                None,
+                None,
+                instance,
+                None,
+            );
+
+            let hwnd = hwnd.unwrap();
+            if hwnd.is_invalid() {
+                return;
+            }
+
+            // Store app_handle for later use in wnd_proc
+            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                USB_APP_HANDLE.lock().await.replace(app_handle);
+            });
+
+            let mut msg = MSG::default();
+            while GetMessageW(&mut msg, None, 0, 0).as_bool() {
+                DispatchMessageW(&msg);
+            }
+        }
+    });
+}
+
+extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    if msg == WM_DEVICECHANGE {
+        if wparam.0 == DBT_DEVICEARRIVAL {
+            println!(">>> USB DEVICE DETECTED! (Instant)");
+            
+            // Trigger the notification
+            thread::spawn(|| {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(async {
+                    if let Some(handle) = USB_APP_HANDLE.lock().await.as_ref() {
+                        let _ = notify_usb_event(handle.clone()).await;
+                    }
+                });
+            });
+        }
+    }
+    unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) }
+}
+
+async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
+    let session = load_session(&handle);
+    let token = match session {
+        Some(s) => s.access_token.unwrap_or_default(),
+        None => return Err("No session".to_string()),
+    };
+
+    if token.is_empty() {
+        return Err("Not logged in".to_string());
+    }
+
+    // Give the OS a second to mount the disk
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+    // Get disk details
+    let mut usb_name = "Unknown USB".to_string();
+    let mut mount_point = "".to_string();
+    let mut total_space = 0;
+
+    // Use sysinfo to scan for removable drives
+    let mut disks = sysinfo::Disks::new();
+    disks.refresh_list();
+
+    for disk in &disks {
+        // Removable drives usually have specific properties or are just the latest arrival
+        // We'll just take the first one that isn't a fixed disk if possible
+        if !matches!(disk.kind(), sysinfo::DiskKind::HDD | sysinfo::DiskKind::SSD) {
+            usb_name = disk.name().to_string_lossy().to_string();
+            mount_point = disk.mount_point().to_string_lossy().to_string();
+            total_space = disk.total_space();
+            // Don't break yet, we might find a better one
+        }
+    }
+
+    let api_url = match session {
+        Some(s) => s.api_url.unwrap_or_else(|| "https://test.asadvanceit.com".to_string()),
+        None => "https://test.asadvanceit.com".to_string(),
+    };
+
+    // Determine USB event URL from login/api URL
+    // We want to replace /api/agent/login with /api/agent/usb-event
+    let usb_event_url = if api_url.contains("/api/agent/login") {
+        api_url.replace("/api/agent/login", "/api/agent/usb-event")
+    } else {
+        // Fallback or generic construction
+        format!("{}/api/agent/usb-event", api_url.trim_end_matches('/').trim_end_matches("/api/agent/login"))
+    };
+
+    let payload = json!({
+        "name": usb_name,
+        "mount": mount_point,
+        "total_space": total_space,
+    });
+
+    println!(">>> Sending USB notification to server: {} with payload: {:?}", usb_event_url, payload);
+
+    let _ = client.post(&usb_event_url)
+        .header("Authorization", format!("Bearer {}", token))
+        .json(&payload)
+        .send()
+        .await;
+
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -484,6 +632,10 @@ fn main() {
             // Start Signaling in Background
             let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
             start_signaling_background(hwid, "https://test.asadvanceit.com".to_string());
+
+            // Start USB Monitoring
+            start_usb_monitor(_app.handle().clone());
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -20,6 +20,7 @@ Route::post('/agent/heartbeat', [\App\Http\Controllers\Api\MonitoringController:
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/agent/stream', [MonitoringController::class, 'uploadStream']);
     Route::post('/agent/signal', [MonitoringController::class, 'sendSignal']); // Modified from original
+    Route::post('/agent/usb-event', [\App\Http\Controllers\Api\USBNotificationController::class, 'handleUsbEvent']);
 });
 
 // Admin watching signal (public but protected by session on frontend)
@@ -27,6 +28,16 @@ Route::post('/agent/request-stream', [MonitoringController::class, 'requestStrea
 
 // Tauri Auto-Updater Endpoint
 Route::get('/updates/{target}/{current_version}', [UpdateController::class, 'check']);
+
+// Temporary Test Route (Delete after verification)
+Route::get('/test-telegram', function () {
+    $service = app(\App\Services\TelegramService::class);
+    $status = $service->testConnection();
+    return response()->json([
+        'success' => $status,
+        'message' => $status ? 'Test message sent!' : 'Failed to send test message. Check logs.'
+    ]);
+});
 
 // The original Route::post('/agent/signal') and Route::post('/agent/request-stream')
 // are replaced/modified by the new structure provided in the instruction.

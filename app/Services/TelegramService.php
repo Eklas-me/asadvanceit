@@ -17,6 +17,11 @@ class TelegramService
 
         $rawChatIds = \App\Models\SiteSetting::get('telegram_admin_chat_id') ?? config('telegram.admin_chat_id');
 
+        \Log::debug('TelegramService initialized', [
+            'hasToken' => !empty($this->botToken),
+            'rawChatIds' => $rawChatIds
+        ]);
+
         if ($rawChatIds) {
             // Support comma separated IDs
             $this->chatIds = array_filter(array_map('trim', explode(',', $rawChatIds)));
@@ -91,11 +96,21 @@ class TelegramService
     {
         $url = "https://api.telegram.org/bot{$this->botToken}/sendMessage";
 
-        Http::withoutVerifying()->post($url, [
+        $response = Http::withoutVerifying()->post($url, [
             'chat_id' => $chatId,
             'text' => $text,
             'parse_mode' => 'Markdown'
         ]);
+
+        if (!$response->successful()) {
+            Log::error('Telegram SendMessage Failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'chat_id' => $chatId
+            ]);
+        } else {
+            Log::info('Telegram Message Sent Successfully', ['chat_id' => $chatId]);
+        }
     }
 
     /**
@@ -149,6 +164,39 @@ class TelegramService
             return true;
         } catch (\Exception $e) {
             Log::error('Telegram test failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+    /**
+     * Send USB insertion notification
+     */
+    public function sendUsbNotification($user, $usbData)
+    {
+        try {
+            if (!$this->botToken || empty($this->chatIds)) {
+                return false;
+            }
+
+            $message = "🔌 *USB Device Detected*\n\n";
+            $message .= "👤 *Agent:* {$user->name} ({$user->email})\n";
+            $message .= "🕐 *Time:* " . now()->format('M d, Y h:i A') . "\n";
+            $message .= "📦 *Device:* " . ($usbData['name'] ?? 'Unknown USB') . "\n";
+            $message .= "📍 *Mount:* " . ($usbData['mount'] ?? 'N/A') . "\n";
+
+            if (isset($usbData['total_space'])) {
+                $size = round($usbData['total_space'] / (1024 * 1024 * 1024), 2);
+                $message .= "💾 *Size:* {$size} GB\n";
+            }
+
+            $message .= "🌐 *IP:* " . request()->ip() . "\n";
+
+            foreach ($this->chatIds as $chatId) {
+                $this->sendMessage($chatId, $message);
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('USB Telegram notification failed: ' . $e->getMessage());
             return false;
         }
     }

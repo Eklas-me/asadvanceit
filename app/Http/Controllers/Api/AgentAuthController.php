@@ -72,6 +72,25 @@ class AgentAuthController extends Controller
         // Generate Sanctum API Token for the Agent
         $apiToken = $user->createToken('agent-app')->plainTextToken;
 
+        // Send Telegram notification (async-like, won't block response significantly)
+        try {
+            if (!$user->is_core_admin) {
+                $agent = new \Jenssegers\Agent\Agent();
+                $loginData = [
+                    'ip' => $request->ip(),
+                    'device' => $agent->device() ?: 'Agent App (Desktop)',
+                    'browser' => 'Tauri / Agent App',
+                    'platform' => $agent->platform() ?: 'Windows',
+                    'location' => $this->getLocation($request->ip()),
+                ];
+
+                $telegramService = app(\App\Services\TelegramService::class);
+                $telegramService->sendLoginNotification($user, $loginData);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Agent login notification failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful.',
@@ -82,5 +101,25 @@ class AgentAuthController extends Controller
                 'email' => $user->email,
             ],
         ]);
+    }
+
+    /**
+     * Get location from IP address
+     */
+    protected function getLocation($ip)
+    {
+        try {
+            if ($ip === '127.0.0.1' || $ip === '::1') {
+                return 'Local';
+            }
+            $response = \Http::timeout(3)->get("https://ipapi.co/{$ip}/json/");
+            if ($response->successful()) {
+                $data = $response->json();
+                return ($data['city'] ?? 'Unknown') . ', ' . ($data['country_name'] ?? 'Unknown');
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Location detection failed: ' . $e->getMessage());
+        }
+        return 'Unknown';
     }
 }
