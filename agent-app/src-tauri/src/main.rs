@@ -545,8 +545,9 @@ extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM
     // Log every WM_DEVICECHANGE to see if we get anything
     if msg == WM_DEVICECHANGE {
         println!(">>> WM_DEVICECHANGE received: wparam={:X}", wparam.0);
-        if wparam.0 == DBT_DEVICEARRIVAL {
-            println!(">>> USB DEVICE ARRIVAL DETECTED!");
+        // 0x07 = DBT_DEVNODES_CHANGED
+        if wparam.0 == DBT_DEVICEARRIVAL || wparam.0 == 0x07 {
+            println!(">>> USB/Device ARRIVAL or CHANGE DETECTED!");
             
             // Trigger the notification
             thread::spawn(|| {
@@ -564,6 +565,34 @@ extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM
         }
     }
     unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) }
+}
+
+use std::collections::HashSet;
+
+struct UsbState {
+    known_devices: std::sync::Mutex<HashSet<String>>,
+}
+
+// ... (Other structs and imports remain, make sure not to delete them if outside range)
+
+fn get_wpd_devices() -> Vec<String> {
+    let output = std::process::Command::new("powershell")
+        .args(&[
+            "-NoProfile",
+            "-Command",
+            "Get-PnpDevice -Class WPD -PresentOnly | Select-Object -ExpandProperty FriendlyName"
+        ])
+        .output();
+
+    if let Ok(o) = output {
+        let stdout = String::from_utf8_lossy(&o.stdout);
+        stdout.lines()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect()
+    } else {
+        Vec::new()
+    }
 }
 
 async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
@@ -585,61 +614,90 @@ async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
         return Err("Not logged in".to_string());
     }
 
-    println!(">>> Waiting 2 seconds for disk mount...");
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    println!(">>> Waiting 3 seconds for device stabilization...");
+    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
-    // Get disk details
-    let mut usb_name = "Unknown USB".to_string();
-    let mut mount_point = "".to_string();
-    let mut total_space = 0;
+    // Capture current state of all devices
+    let mut current_device_map: std::collections::HashMap<String, (String, String, u64)> = std::collections::HashMap::new();
 
+    // 1. Scan Disks
     let mut disks = sysinfo::Disks::new();
     disks.refresh_list();
-
-    println!(">>> Scanning {} disks...", disks.len());
     for disk in &disks {
-        let kind = format!("{:?}", disk.kind());
-        println!(">>> Found disk: {} ({}) at {}", disk.name().to_string_lossy(), kind, disk.mount_point().to_string_lossy());
-        
         if !matches!(disk.kind(), sysinfo::DiskKind::HDD | sysinfo::DiskKind::SSD) {
-            let current_space = disk.total_space();
-            // Only replace if this disk is larger than the previously selected one
-            if current_space > total_space {
-                usb_name = disk.name().to_string_lossy().to_string();
-                mount_point = disk.mount_point().to_string_lossy().to_string();
-                total_space = current_space;
-                println!(">>> Selected as BEST potential USB: {} | Size: {} bytes", usb_name, total_space);
-            }
+            let name = disk.name().to_string_lossy().to_string();
+            let mount = disk.mount_point().to_string_lossy().to_string();
+            let size = disk.total_space();
+            // Key: Mount point is usually unique for disks
+            let key = format!("DISK:{}", mount);
+            current_device_map.insert(key, (name, mount, size));
         }
     }
 
-    let client = reqwest::Client::new();
+    // 2. Scan WPD (Phones)
+    let wpd_devices = get_wpd_devices();
+    for name in wpd_devices {
+        let key = format!("WPD:{}", name);
+        current_device_map.insert(key, (name, "WPD/MTP".to_string(), 0));
+    }
 
-    let usb_event_url = if api_url.contains("/api/agent/login") {
-        api_url.replace("/api/agent/login", "/api/agent/usb-event")
+    // 3. Diff against known state
+    let state = handle.state::<UsbState>();
+    let mut new_device = None;
+    
+    {
+        let mut known = state.known_devices.lock().unwrap();
+        
+        // Find a device that is in current but NOT in known
+        for (key, data) in &current_device_map {
+            if !known.contains(key) {
+                // Found a new one!
+                println!(">>> NEW DEVICE DETECTED: {}", key);
+                // Prefer selecting this one. If multiple, we create a strategy (largest, or just first)
+                if new_device.is_none() {
+                    new_device = Some(data.clone());
+                } else {
+                    // If we already have a candidate, prefer WPD over Disk (assuming WPD is the "tricky" one)
+                    // Or prefer larger size?
+                    // Let's just stick to first found for now, but usually events fire per device.
+                    // Actually, if we plug in an iPhone, only WPD appears.
+                }
+            }
+        }
+
+        // Update known state to match current (handle removals too)
+        *known = current_device_map.keys().cloned().collect();
+        println!(">>> Updated Known Devices: {:?}", known);
+    }
+
+    if let Some((usb_name, mount_point, total_space)) = new_device {
+        println!(">>> Reporting New Device: {} ({})", usb_name, mount_point);
+        
+        let client = reqwest::Client::new();
+        let usb_event_url = if api_url.contains("/api/agent/login") {
+            api_url.replace("/api/agent/login", "/api/agent/usb-event")
+        } else {
+            format!("{}/api/agent/usb-event", api_url.trim_end_matches('/').trim_end_matches("/api/agent/login"))
+        };
+
+        let payload = json!({
+            "name": usb_name,
+            "mount": mount_point,
+            "total_space": total_space,
+        });
+
+        println!(">>> Sending USB notification to: {}", usb_event_url);
+
+        let response = client.post(&usb_event_url)
+            .header("Authorization", format!("Bearer {}", token))
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("Network error: {}", e))?;
+
+        println!(">>> Server responded with status: {}", response.status());
     } else {
-        format!("{}/api/agent/usb-event", api_url.trim_end_matches('/').trim_end_matches("/api/agent/login"))
-    };
-
-    let payload = json!({
-        "name": usb_name,
-        "mount": mount_point,
-        "total_space": total_space,
-    });
-
-    println!(">>> Sending USB notification to: {}", usb_event_url);
-
-    let response = client.post(&usb_event_url)
-        .header("Authorization", format!("Bearer {}", token))
-        .json(&payload)
-        .send()
-        .await
-        .map_err(|e| format!("Network error: {}", e))?;
-
-    println!(">>> Server responded with status: {}", response.status());
-    if !response.status().is_success() {
-        let body = response.text().await.unwrap_or_default();
-        println!(">>> Error body: {}", body);
+        println!(">>> No NEW devices detected (Existing ones ignored).");
     }
 
     Ok(())
@@ -648,13 +706,38 @@ async fn notify_usb_event(handle: tauri::AppHandle) -> Result<(), String> {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .setup(|_app| {
+        .manage(UsbState {
+            known_devices: std::sync::Mutex::new(HashSet::new()),
+        })
+        .setup(|app| {
+            // Initialize Known Devices State
+            let state = app.state::<UsbState>();
+            let mut known = state.known_devices.lock().unwrap();
+            
+            println!(">>> Initial Device Scan...");
+            // Scan Disks
+            let mut disks = sysinfo::Disks::new();
+            disks.refresh_list();
+            for disk in &disks {
+                if !matches!(disk.kind(), sysinfo::DiskKind::HDD | sysinfo::DiskKind::SSD) {
+                    let mount = disk.mount_point().to_string_lossy().to_string();
+                    let key = format!("DISK:{}", mount);
+                    known.insert(key);
+                }
+            }
+            // Scan WPD
+            for name in get_wpd_devices() {
+                let key = format!("WPD:{}", name);
+                known.insert(key);
+            }
+            println!(">>> Initial Known Devices: {:?}", known);
+
             // Start Signaling in Background
             let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
             start_signaling_background(hwid, "https://test.asadvanceit.com".to_string());
 
             // Start USB Monitoring
-            start_usb_monitor(_app.handle().clone());
+            start_usb_monitor(app.handle().clone());
 
             Ok(())
         })

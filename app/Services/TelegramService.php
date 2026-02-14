@@ -188,7 +188,7 @@ class TelegramService
             $message .= "📦 <b>Device:</b> {$usbName}\n";
             $message .= "📍 <b>Mount:</b> {$mount}\n";
 
-            if (isset($usbData['total_space'])) {
+            if (isset($usbData['total_space']) && $usbData['total_space'] > 0) {
                 $size = round($usbData['total_space'] / (1024 * 1024 * 1024), 2);
                 $message .= "💾 <b>Size:</b> {$size} GB\n";
             }
