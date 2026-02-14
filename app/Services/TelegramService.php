@@ -78,30 +78,30 @@ class TelegramService
     }
 
     /**
-     * Format login message
+     * Format login message (HTML)
      */
     protected function formatLoginMessage($user, $loginData)
     {
-        $message = "✅ *SUCCESSFUL LOGIN*\n";
-        $message .= "👤 *User:* {$user->name}\n";
-        $message .= "📧 *Email:* {$user->email}\n";
-        $message .= "🕒 *Time:* " . now()->format('h:i A, M d') . "\n";
-        $message .= "🌐 *IP:* {$loginData['ip']}\n";
+        $message = "✅ <b>SUCCESSFUL LOGIN</b>\n";
+        $message .= "👤 <b>User:</b> " . htmlspecialchars($user->name) . "\n";
+        $message .= "📧 <b>Email:</b> " . htmlspecialchars($user->email) . "\n";
+        $message .= "🕒 <b>Time:</b> " . now()->format('h:i A, M d') . "\n";
+        $message .= "🌐 <b>IP:</b> " . htmlspecialchars($loginData['ip']) . "\n";
 
         if (!empty($loginData['location'])) {
-            $message .= "📍 *Location:* {$loginData['location']}\n";
+            $message .= "📍 <b>Location:</b> " . htmlspecialchars($loginData['location']) . "\n";
         }
 
         if (!empty($loginData['device'])) {
-            $message .= "💻 *Device:* {$loginData['device']}\n";
+            $message .= "💻 <b>Device:</b> " . htmlspecialchars($loginData['device']) . "\n";
         }
 
         if (!empty($loginData['browser'])) {
-            $message .= "🌍 *Browser:* {$loginData['browser']}\n";
+            $message .= "🌍 <b>Browser:</b> " . htmlspecialchars($loginData['browser']) . "\n";
         }
 
         if (!empty($loginData['platform'])) {
-            $message .= "🖥️ *OS:* {$loginData['platform']}\n";
+            $message .= "🖥️ <b>OS:</b> " . htmlspecialchars($loginData['platform']) . "\n";
         }
 
         return $message;
@@ -110,7 +110,7 @@ class TelegramService
     /**
      * Send message to Telegram
      */
-    protected function sendMessage($chatId, $text, $parseMode = 'Markdown')
+    protected function sendMessage($chatId, $text, $parseMode = 'HTML')
     {
         $url = "https://api.telegram.org/bot{$this->botToken}/sendMessage";
 
@@ -124,7 +124,8 @@ class TelegramService
             Log::error('Telegram SendMessage Failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
-                'chat_id' => $chatId
+                'chat_id' => $chatId,
+                'text_sent' => $text
             ]);
         } else {
             Log::info('Telegram Message Sent Successfully', ['chat_id' => $chatId]);
@@ -144,7 +145,7 @@ class TelegramService
                 'chat_id' => $chatId,
                 'caption' => $caption,
                 'photo' => $photoSource,
-                'parse_mode' => 'Markdown'
+                'parse_mode' => 'HTML'
             ]);
         } else {
             // Assume it's a local file path
@@ -154,32 +155,33 @@ class TelegramService
                     ->post($url, [
                         'chat_id' => $chatId,
                         'caption' => $caption,
-                        'parse_mode' => 'Markdown'
+                        'parse_mode' => 'HTML'
                     ]);
             } else {
-                // Should not happen if logic is correct, but fallback to text
-                $this->sendMessage($chatId, $caption);
+                $this->sendMessage($chatId, $caption, 'HTML');
                 return;
             }
         }
 
         if (!$response->successful()) {
-            Log::error('Telegram API Error for Chat ID ' . $chatId . ': ' . $response->body());
+            Log::error('Telegram sendPhoto Failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'chat_id' => $chatId
+            ]);
         }
     }
 
     /**
-     * Test connection by sending a test message
+     * Test connection
      */
     public function testConnection()
     {
         try {
-            if (empty($this->chatIds)) {
+            if (empty($this->chatIds))
                 return false;
-            }
-
             foreach ($this->chatIds as $chatId) {
-                $this->sendMessage($chatId, "✅ Telegram bot connected successfully to this chat!");
+                $this->sendMessage($chatId, "✅ Telegram bot connected successfully!");
             }
             return true;
         } catch (\Exception $e) {
@@ -187,15 +189,15 @@ class TelegramService
             return false;
         }
     }
+
     /**
      * Send USB insertion notification
      */
     public function sendUsbNotification($user, $usbData)
     {
         try {
-            if (!$this->botToken || empty($this->chatIds)) {
+            if (!$this->botToken || empty($this->chatIds))
                 return false;
-            }
 
             $usbName = htmlspecialchars($usbData['name'] ?? 'Unknown USB');
             $mount = htmlspecialchars($usbData['mount'] ?? 'N/A');
@@ -214,7 +216,7 @@ class TelegramService
             $message .= "──────────────────────\n";
             $message .= "👤 <b>User:</b> {$userName} ({$userEmail})\n";
             $message .= "🕒 <b>Time:</b> " . now()->format('h:i A, M d') . "\n";
-            $message .= "🌐 <b>IP:</b> " . request()->ip() . "\n";
+            $message .= "🌐 <b>IP:</b> " . htmlspecialchars(request()->ip()) . "\n";
 
             foreach ($this->chatIds as $chatId) {
                 $this->sendMessage($chatId, $message, 'HTML');
