@@ -131,10 +131,10 @@
 
                         <div class="mb-3">
                             <label class="form-label">Update File (Direct Upload)</label>
-                            <input type="file" name="agent_update_file" class="form-control" accept=".zip">
+                            <input type="file" name="agent_update_file" class="form-control" accept=".zip,.msi,.exe">
                             <small class="text-info d-block mt-1">
-                                <i class="fas fa-info-circle me-1"></i> Upload the <code>.msi.zip</code> file generated during build. 
-                                <br>Windows updater requires a compressed <code>.zip</code> file to work.
+                                <i class="fas fa-info-circle me-1"></i> Upload the <code>.msi</code> or <code>.exe</code> file generated during build. 
+                                <br>Tauri v2 generates these as updater artifacts directly.
                             </small>
                         </div>
 

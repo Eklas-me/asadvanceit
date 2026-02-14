@@ -239,7 +239,7 @@ class SettingsController extends Controller
     {
         $request->validate([
             'agent_version' => 'required|string|max:50',
-            'agent_update_file' => 'nullable|file|mimes:zip|max:51200', // Max 50MB
+            'agent_update_file' => 'nullable|file|mimes:zip,msi,exe|max:51200', // Max 50MB
             'agent_download_url' => 'required_without:agent_update_file|nullable|url',
             'agent_signature' => 'required|string',
             'agent_notes' => 'nullable|string',
@@ -248,7 +248,8 @@ class SettingsController extends Controller
         try {
             if ($request->hasFile('agent_update_file')) {
                 $file = $request->file('agent_update_file');
-                $filename = 'asadvanceit-agent-' . str_replace('.', '_', $request->agent_version) . '.msi.zip';
+                $extension = $file->getClientOriginalExtension();
+                $filename = 'asadvanceit-agent-' . str_replace('.', '_', $request->agent_version) . '.' . $extension;
                 $path = $file->storeAs('agent-updates', $filename, 'public');
                 $downloadUrl = asset('storage/' . $path);
                 \App\Models\SiteSetting::set('agent_download_url', $downloadUrl);
