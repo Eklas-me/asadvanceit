@@ -370,6 +370,9 @@
                     <a href="{{ route('register') }}" class="nav-link">
                         <i class="fas fa-user-plus"></i> Register
                     </a>
+                    <a href="{{ route('password.request') }}" class="nav-link">
+                        <i class="fas fa-key"></i> Forgot Password?
+                    </a>
                     <a href="#" class="nav-link">
                         <i class="fas fa-headset"></i> Support
                     </a>
