@@ -252,10 +252,20 @@ class SettingsController extends Controller
             $request->validate([
                 'agent_version' => 'required|string|max:50',
                 'agent_update_file' => 'nullable|file|mimes:zip,msi,exe,bin,octet-stream|max:102400', // Increased to 100MB
-                'agent_download_url' => 'required_without:agent_update_file|nullable|url',
+                'agent_download_url' => 'nullable', // Removed url validation if empty or file presented
                 'agent_signature' => 'required|string',
                 'agent_notes' => 'nullable|string',
             ], $messages);
+
+            // Custom check: either file or URL must be present
+            if (!$request->hasFile('agent_update_file') && empty($request->agent_download_url)) {
+                return back()->withInput()->withErrors(['agent_download_url' => 'Please provide either an update file or a manual download URL.']);
+            }
+            // Check if URL is valid if provided
+            if (empty($request->file('agent_update_file')) && !empty($request->agent_download_url) && !filter_var($request->agent_download_url, FILTER_VALIDATE_URL)) {
+                return back()->withInput()->withErrors(['agent_download_url' => 'The agent download url must be a valid URL.']);
+            }
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Check if the file was missing despite being sent (indicates post_max_size or upload_max_filesize limit hit)
             if ($request->has('agent_update_file') && !$request->hasFile('agent_update_file')) {
