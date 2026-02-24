@@ -40,6 +40,7 @@ machine-uid = "0.3"
 hostname = "0.4"
 webrtc = "0.11"
 tauri-plugin-updater = { version = "2.0.0-rc" }
+uuid = { version = "1.21.0", features = ["v4"] }
 
 [features]
 default = ["custom-protocol"]

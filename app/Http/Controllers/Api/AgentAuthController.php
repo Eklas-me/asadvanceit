@@ -16,11 +16,22 @@ class AgentAuthController extends Controller
      */
     public function login(Request $request)
     {
-        \Log::info('Agent login attempt', ['email' => $request->email]);
+        \Log::info('Agent login attempt', ['email' => $request->email, 'version' => $request->agent_version]);
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
+            'agent_version' => 'nullable|string',
         ]);
+
+        $requiredVersion = '1.0.2';
+        $agentVersion = $request->input('agent_version', '1.0.0'); // Default to 1.0.0 if not provided
+
+        if (version_compare($agentVersion, $requiredVersion, '<')) {
+            return response()->json([
+                'success' => false,
+                'message' => "Update Required! You are using v{$agentVersion}. Please download and install the latest version (v{$requiredVersion} or higher) to continue.",
+            ], 426); // 426 Upgrade Required
+        }
 
         $user = User::where('email', $request->email)->first();
 

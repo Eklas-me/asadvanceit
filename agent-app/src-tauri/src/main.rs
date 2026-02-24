@@ -97,9 +97,30 @@ struct LoginResponse {
     user: Option<UserInfo>,
 }
 
+fn get_or_create_hwid(app_handle: &tauri::AppHandle) -> String {
+    let mut path = app_handle.path().app_config_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let _ = fs::create_dir_all(&path);
+    path.push("hwid.txt");
+
+    // Try to read existing
+    if path.exists() {
+        if let Ok(id) = fs::read_to_string(&path) {
+            let trimmed = id.trim();
+            if !trimmed.is_empty() {
+                return trimmed.to_string();
+            }
+        }
+    }
+
+    // Generate new if not exists
+    let new_id = uuid::Uuid::new_v4().to_string();
+    let _ = fs::write(&path, &new_id);
+    new_id
+}
+
 #[tauri::command]
-fn get_hwid() -> String {
-    machine_uid::get().unwrap_or_else(|_| "unknown_hwid".to_string())
+fn get_hwid(app_handle: tauri::AppHandle) -> String {
+    get_or_create_hwid(&app_handle)
 }
 
 #[tauri::command]
@@ -128,7 +149,8 @@ async fn login(app_handle: tauri::AppHandle, email: String, password: String, ap
             "device_name": hostname,
             "os_info": os_info,
             "browser": "Advance IT Client", // Hardcoded branding
-            "platform": "Desktop App"
+            "platform": "Desktop App",
+            "agent_version": "1.0.2"
         }))
         .send()
         .await
@@ -160,7 +182,7 @@ async fn login(app_handle: tauri::AppHandle, email: String, password: String, ap
             // Determine stream URL from login URL (replace /login with /stream)
             // Assuming api_url ends with /api/agent/login
             let stream_url = api_url.replace("/login", "/stream");
-            let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
+            let hwid = get_or_create_hwid(&app_handle);
             start_monitoring_background(stream_url, token, hwid);
         }
 
@@ -200,7 +222,7 @@ async fn check_session(app_handle: tauri::AppHandle) -> Result<Option<UserInfo>,
             // Re-trigger monitoring (shared logic with login)
             let base_url = "https://asadvanceit.com"; // Default for now
             let stream_url = format!("{}/api/agent/stream", base_url);
-            let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
+            let hwid = get_or_create_hwid(&app_handle);
             start_monitoring_background(stream_url, token.clone(), hwid);
             
             return Ok(Some(UserInfo { name, email }));
@@ -269,7 +291,7 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
             let mut payload = json!({
                 "stats": stats,
                 "hardware_id": hardware_id,
-                "agent_version": "1.0.1"
+                "agent_version": "1.0.2"
             });
 
             if !image_b64.is_empty() {
@@ -774,7 +796,7 @@ fn main() {
             println!(">>> Initial Known Devices: {:?}", known);
 
             // Start Signaling in Background
-            let hwid = machine_uid::get().unwrap_or_else(|_| "unknown".to_string());
+            let hwid = get_or_create_hwid(app.handle());
             start_signaling_background(hwid, "https://asadvanceit.com".to_string());
 
             // Start USB Monitoring
