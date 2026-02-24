@@ -35,6 +35,17 @@ async function checkExistingSession() {
     if (!invoke) return;
 
     try {
+        const isForceLogout = await invoke('check_force_logout');
+
+        if (isForceLogout) {
+            console.log('Force logout detected from previous session');
+            await invoke('open_browser', { url: `${BASE_URL}/logout-sync` });
+            await invoke('logout');
+            errorMessage.textContent = 'Your session was terminated because a new login was detected on another device.';
+            errorMessage.style.display = 'block';
+            return;
+        }
+
         const userInfo = await invoke('check_session');
         if (userInfo) {
             showLoggedInState(userInfo);

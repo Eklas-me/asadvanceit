@@ -5,7 +5,7 @@
     "identifier": "com.advancedit.viewer",
     "build": {
         "beforeDevCommand": "npm run dev",
-        "devUrl": "http://localhost:5556",
+        "devUrl": "http://localhost:5557",
         "beforeBuildCommand": "npm run build",
         "frontendDist": "../dist"
     },

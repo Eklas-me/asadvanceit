@@ -69,6 +69,12 @@ class AgentAuthController extends Controller
         // Return magic link URL
         $magicUrl = url('/magic-login/' . $token);
 
+        // Broadcast force logout event to connected clients on the old token/channel
+        broadcast(new \App\Events\ForceLogoutEvent($user->id));
+
+        // Delete all existing tokens to enforce single-device login
+        $user->tokens()->delete();
+
         // Generate Sanctum API Token for the Agent
         $apiToken = $user->createToken('agent-app')->plainTextToken;
 

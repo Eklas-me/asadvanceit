@@ -58,40 +58,66 @@
             <h1 class="premium-title display-5">Connected Devices</h1>
             <p class="text-muted">Monitor live activity across all installed agent instances.</p>
         </div>
+        <!-- Active Device Count Badge -->
+        <span class="badge bg-primary text-white rounded-pill px-3 py-2 ms-3 fs-6 shadow-sm" style="background: linear-gradient(45deg, #007bff, #00d2ff) !important; border: 1px solid rgba(255,255,255,0.2);">
+            <i class="fas fa-desktop me-2"></i> {{ $devices->count() }} Active {{ Str::plural('Device', $devices->count()) }}
+        </span>
     </div>
 
-    <div class="row">
+    <div class="row g-4">
         @forelse($devices as $device)
             @php 
                 $isOnline = $device->last_seen && $device->last_seen->diffInMinutes(now()) < 5;
                 $displayName = $device->user ? $device->user->name : $device->computer_name;
             @endphp
-            <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
-                <div class="glass-card h-100 fade-in">
-                    <div class="card-body text-center p-4">
-                        <div class="device-icon-container">
-                            <i class="fas fa-microchip"></i>
-                        </div>
+            <div class="col-xl-3 col-lg-4 col-md-6">
+                <!-- Outer Wrapper for animation -->
+                <div class="h-100" style="perspective: 1000px;">
+                    <div class="glass-card h-100 fade-in position-relative">
+                        <!-- Top Accent Line -->
+                        <div class="position-absolute top-0 start-0 w-100" style="height: 4px; background: linear-gradient(90deg, #007bff, #00d2ff); opacity: {{ $isOnline ? 1 : 0.3 }}; transition: opacity 0.3s ease;"></div>
                         
-                        <div class="d-flex align-items-center justify-content-center mb-2">
-                            <span class="status-badge {{ $isOnline ? 'status-online' : 'status-offline' }}"></span>
-                            <span class="small {{ $isOnline ? 'text-success' : 'text-muted' }} fw-bold">
-                                {{ $isOnline ? 'LIVE' : 'OFFLINE' }}
-                            </span>
+                        <div class="card-body text-center p-4 d-flex flex-column h-100">
+                            <!-- Status Indicator -->
+                            <div class="d-flex justify-content-end mb-2">
+                                <span class="badge rounded-pill {{ $isOnline ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25' }} px-2 py-1" style="font-size: 0.70rem;">
+                                    <span class="status-badge {{ $isOnline ? 'status-online' : 'status-offline' }} me-1 align-middle" style="width: 8px; height: 8px;"></span>
+                                    {{ $isOnline ? 'LIVE NOW' : 'OFFLINE' }}
+                                </span>
+                            </div>
+
+                            <div class="device-icon-container shadow-sm mx-auto mb-3" style="transition: transform 0.3s ease;">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+
+                            <h5 class="text-white mb-1 fw-bold text-truncate" title="{{ $displayName }}">{{ $displayName }}</h5>
+                            
+                            <div class="text-muted small mb-4 flex-grow-1">
+                                @if($device->user)
+                                    <div class="d-flex align-items-center justify-content-center text-truncate" title="{{ $device->user->email }}">
+                                        <i class="fas fa-user-circle me-2 text-primary opacity-75"></i> 
+                                        <span>{{ $device->user->email }}</span>
+                                    </div>
+                                    @if($device->computer_name != $displayName)
+                                      <div class="mt-1 opacity-50" style="font-size: 0.75rem;"><i class="fas fa-desktop me-1"></i> {{ $device->computer_name }}</div>
+                                    @endif
+                                @else
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-desktop me-2 text-primary opacity-75"></i> 
+                                        <span>{{ $device->computer_name }}</span>
+                                    </div>
+                                @endif
+                                <div class="mt-2 opacity-50" style="font-size: 0.7rem;">
+                                    <i class="fas fa-clock me-1"></i> Last seen: {{ $device->last_seen ? $device->last_seen->diffForHumans() : 'Never' }}
+                                </div>
+                            </div>
+
+                            <div class="mt-auto pt-3 border-top border-secondary border-opacity-25">
+                                <a href="{{ route('admin.monitoring.show', $device->id) }}" class="btn btn-primary btn-round w-100 py-2 shadow-sm d-flex align-items-center justify-content-center" style="transition: all 0.2s ease;">
+                                    <i class="fas fa-play me-2"></i> {{ $isOnline ? 'Open Monitor' : 'View Logs' }}
+                                </a>
+                            </div>
                         </div>
-
-                        <h5 class="text-white mb-1">{{ $displayName }}</h5>
-                        <p class="text-muted small mb-4">
-                            @if($device->user)
-                                <i class="fas fa-user-circle me-1"></i> Logged in as {{ $device->user->email }}
-                            @else
-                                <i class="fas fa-desktop me-1"></i> {{ $device->computer_name }}
-                            @endif
-                        </p>
-
-                        <a href="{{ route('admin.monitoring.show', $device->id) }}" class="btn btn-primary btn-round w-100 py-2 shadow-sm">
-                            <i class="fas fa-play me-2"></i> {{ $isOnline ? 'Open Monitor' : 'View Logs' }}
-                        </a>
                     </div>
                 </div>
             </div>

@@ -10,9 +10,9 @@ class MonitoringController extends Controller
 {
     public function index()
     {
-        // Only show devices active in the last 2 minutes
+        // Only show devices active in the last 1.5 minutes (90 seconds)
         $devices = \App\Models\Device::with('user')
-            ->where('last_seen', '>=', now()->subMinutes(2))
+            ->where('last_seen', '>=', now()->subSeconds(90))
             ->orderBy('last_seen', 'desc')
             ->get();
 

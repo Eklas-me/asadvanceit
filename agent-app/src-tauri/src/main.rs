@@ -210,6 +210,17 @@ async fn check_session(app_handle: tauri::AppHandle) -> Result<Option<UserInfo>,
 }
 
 #[tauri::command]
+async fn check_force_logout() -> Result<bool, String> {
+    let flag_path = PathBuf::from("force_logout.flag");
+    if flag_path.exists() {
+        let _ = fs::remove_file(flag_path);
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+#[tauri::command]
 async fn open_browser(url: String) -> Result<(), String> {
     open::that(&url).map_err(|e| format!("Failed to open browser: {}", e))
 }
@@ -315,7 +326,7 @@ fn start_signaling_background(hwid: String, base_url: String) {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             println!(">>> Starting Signaling WebSocket for HWID: {}", hwid);
-            let ws_url = format!("wss://test.asadvanceit.com/app/reverb_app_key?protocol=7&client=js&version=8.4.0-rc2&flash=false");
+            let ws_url = format!("wss://asadvanceit.com/app/reverb_app_key?protocol=7&client=js&version=8.4.0-rc2&flash=false");
             
             let webrtc_manager: Arc<Mutex<Option<WebRTCManager>>> = Arc::new(Mutex::new(None));
             let hwid_clone = hwid.clone();
@@ -346,7 +357,21 @@ fn start_signaling_background(hwid: String, base_url: String) {
                                         let event = data["event"].as_str().unwrap_or("");
                                         // println!(">>> Received Event: {} on channel {}", event, data["channel"].as_str().unwrap_or(""));
 
-                                        if event == "webrtc.signal" {
+                                        if event == "App\\Events\\ForceLogoutEvent" {
+                                            println!(">>> Received Force Logout Event");
+                                            let my_app_handle = webrtc_manager.lock().await; // hack to get an async context to wait briefly
+                                            
+                                            // Trigger Tauri frontend event (we will emit this from the app handle if we passed it down, 
+                                            // but since we dont have the app handle in this thread directly easily, we can write a special file 
+                                            // or we can use the existing control channel logic. Wait, let's just make it simpler: exit the process, 
+                                            // or pass the handle. Since we don't have the handle, let's just use std::process::exit for a hard reset, 
+                                            // or better yet, since we have check_session in JS, let's just clear the session file directly and exit).
+                                            // Let's clear the session file and exit process. Tauri will restart or close. 
+                                            // Wait, killing the process is harsh. Let's write to a "force_logout.flag" file.
+                                            let _ = std::fs::write("force_logout.flag", "1");
+                                            std::process::exit(0); // Exit the app. The user will have to open it again, or we restart it.
+                                            
+                                        } else if event == "webrtc.signal" {
                                             let raw_data = &data["data"];
                                             let signal_data = if raw_data.is_string() {
                                                 serde_json::from_str::<serde_json::Value>(raw_data.as_str().unwrap()).unwrap_or_default()
@@ -760,6 +785,7 @@ fn main() {
             login,
             logout,
             check_session,
+            check_force_logout,
             open_browser,
             get_hwid,
             get_computer_name
