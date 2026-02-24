@@ -9,6 +9,7 @@ class Device extends Model
     protected $fillable = [
         'hardware_id',
         'computer_name',
+        'agent_version',
         'user_id',
         'last_seen'
     ];

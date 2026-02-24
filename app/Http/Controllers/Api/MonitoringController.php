@@ -17,12 +17,14 @@ class MonitoringController extends Controller
         $request->validate([
             'hardware_id' => 'required|string',
             'computer_name' => 'required|string',
+            'agent_version' => 'nullable|string',
         ]);
 
         $device = Device::updateOrCreate(
             ['hardware_id' => $request->hardware_id],
             [
                 'computer_name' => $request->computer_name,
+                'agent_version' => $request->agent_version,
                 'last_seen' => now(),
                 'user_id' => $request->user()?->id // Only set if logged in
             ]
@@ -37,6 +39,7 @@ class MonitoringController extends Controller
             'image' => 'nullable|string',
             'stats' => 'required|array',
             'hardware_id' => 'nullable|string',
+            'agent_version' => 'nullable|string',
         ]);
 
         $user = $request->user();
@@ -45,12 +48,16 @@ class MonitoringController extends Controller
 
         // Update device record too if HWID is provided
         if ($request->hardware_id) {
+            $deviceData = [
+                'user_id' => $user->id,
+                'last_seen' => now()
+            ];
+            if ($request->has('agent_version')) {
+                $deviceData['agent_version'] = $request->agent_version;
+            }
             Device::updateOrCreate(
                 ['hardware_id' => $request->hardware_id],
-                [
-                    'user_id' => $user->id,
-                    'last_seen' => now()
-                ]
+                $deviceData
             );
         }
 

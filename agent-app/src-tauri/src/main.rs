@@ -268,7 +268,8 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
             // 3. Prepare Payload
             let mut payload = json!({
                 "stats": stats,
-                "hardware_id": hardware_id
+                "hardware_id": hardware_id,
+                "agent_version": "1.0.1"
             });
 
             if !image_b64.is_empty() {

@@ -107,8 +107,15 @@
                                         <span>{{ $device->computer_name }}</span>
                                     </div>
                                 @endif
-                                <div class="mt-2 opacity-50" style="font-size: 0.7rem;">
-                                    <i class="fas fa-clock me-1"></i> Last seen: {{ $device->last_seen ? $device->last_seen->diffForHumans() : 'Never' }}
+                                <div class="mt-2 d-flex justify-content-center align-items-center gap-2">
+                                    <div class="opacity-50" style="font-size: 0.7rem;">
+                                        <i class="fas fa-clock me-1"></i> Last seen: {{ $device->last_seen ? $device->last_seen->diffForHumans() : 'Never' }}
+                                    </div>
+                                    @if($device->agent_version)
+                                    <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50 px-2 py-1" style="font-size: 0.65rem;" title="Agent App Version">
+                                        v{{ $device->agent_version }}
+                                    </span>
+                                    @endif
                                 </div>
                             </div>
 
