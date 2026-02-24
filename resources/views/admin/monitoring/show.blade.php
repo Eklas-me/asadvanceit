@@ -248,19 +248,7 @@
                 </div>
             </div>
 
-            <!-- Debug Log Card -->
-            <div class="card bg-dark text-white border-secondary mt-4">
-                <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-                    <span>WebRTC Debug Log</span>
-                    <button class="btn btn-sm btn-outline-light"
-                        onclick="document.getElementById('debug-log').innerHTML=''">Clear</button>
-                </div>
-                <div class="card-body"
-                    style="height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; background: #0a0a0f;"
-                    id="debug-log">
-                    <!-- Logs will appear here -->
-                </div>
-            </div>
+
         </div>
 
         <!-- Right Column: Stats & Controls -->
@@ -504,8 +492,8 @@
         // HTTP-based viewer tracking: tell the server admin is watching this device
         // The server caches this with a 15s TTL, so we ping every 10s to keep it alive
         function notifyWatching(watching) {
-            const body = JSON.stringify({ 
-                hardware_id: hwid, 
+            const body = JSON.stringify({
+                hardware_id: hwid,
                 watching: watching,
                 paused: !isPlaying // Send paused state
             });
@@ -536,15 +524,15 @@
 
         window.togglePlay = () => {
             console.log('togglePlay called, current state:', isPlaying);
-            
+
             // 1. Update State
             isPlaying = !isPlaying;
             const action = isPlaying ? 'start_capture' : 'stop_capture';
-            
+
             // 2. Update UI immediately
             const wrapper = document.getElementById('playerWrapper');
             const icon = document.getElementById('playIcon');
-            
+
             if (wrapper) wrapper.classList.toggle('paused', !isPlaying);
             if (icon) icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
 
@@ -564,7 +552,7 @@
 
             // 4. Send Signal to Agent
             sendControlAction(action);
-            
+
             // 5. Sync with Server (HTTP Polling Fallback)
             notifyWatching(true);
         };
