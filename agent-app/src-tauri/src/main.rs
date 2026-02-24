@@ -150,7 +150,7 @@ async fn login(app_handle: tauri::AppHandle, email: String, password: String, ap
             "os_info": os_info,
             "browser": "Advance IT Client", // Hardcoded branding
             "platform": "Desktop App",
-            "agent_version": "1.0.2"
+            "agent_version": "1.0.3"
         }))
         .send()
         .await
@@ -207,6 +207,25 @@ async fn login(app_handle: tauri::AppHandle, email: String, password: String, ap
 #[tauri::command]
 async fn logout(app_handle: tauri::AppHandle) -> Result<(), String> {
     clear_session(&app_handle);
+    Ok(())
+}
+
+#[tauri::command]
+async fn backend_logout(app_handle: tauri::AppHandle, api_url: String) -> Result<(), String> {
+    if let Some(config) = load_session(&app_handle) {
+        if let Some(token) = config.access_token {
+            let hwid = get_or_create_hwid(&app_handle);
+            let client = reqwest::Client::new();
+            
+            let _ = client.post(&api_url)
+                .bearer_auth(token)
+                .json(&serde_json::json!({
+                    "hardware_id": hwid
+                }))
+                .send()
+                .await;
+        }
+    }
     Ok(())
 }
 
@@ -291,7 +310,7 @@ fn start_monitoring_background(stream_url: String, token: String, hardware_id: S
             let mut payload = json!({
                 "stats": stats,
                 "hardware_id": hardware_id,
-                "agent_version": "1.0.2"
+                "agent_version": "1.0.3"
             });
 
             if !image_b64.is_empty() {
@@ -807,6 +826,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             login,
             logout,
+            backend_logout,
             check_session,
             check_force_logout,
             open_browser,

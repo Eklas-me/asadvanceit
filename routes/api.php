@@ -21,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/agent/stream', [MonitoringController::class, 'uploadStream']);
     Route::post('/agent/signal', [MonitoringController::class, 'sendSignal']); // Modified from original
     Route::post('/agent/usb-event', [\App\Http\Controllers\Api\USBNotificationController::class, 'handleUsbEvent']);
+    Route::post('/agent/logout', [AgentAuthController::class, 'logout']);
 });
 
 // Admin watching signal (public but protected by session on frontend)

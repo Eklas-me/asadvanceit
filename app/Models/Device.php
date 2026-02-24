@@ -11,6 +11,7 @@ class Device extends Model
         'computer_name',
         'agent_version',
         'user_id',
+        'last_logged_in_user_id',
         'last_seen'
     ];
 
@@ -21,5 +22,10 @@ class Device extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function lastLoggedInUser()
+    {
+        return $this->belongsTo(User::class, 'last_logged_in_user_id');
     }
 }

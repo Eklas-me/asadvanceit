@@ -139,4 +139,33 @@ class AgentAuthController extends Controller
         }
         return 'Unknown';
     }
+
+    /**
+     * Handle explicit logout from the Agent App
+     */
+    public function logout(Request $request)
+    {
+        $request->validate([
+            'hardware_id' => 'required|string',
+        ]);
+
+        $user = $request->user();
+
+        if ($user) {
+            // Find the device
+            $device = \App\Models\Device::where('hardware_id', $request->hardware_id)->first();
+
+            if ($device) {
+                // Update device: clear active user, but remember them as last logged in
+                $device->last_logged_in_user_id = $user->id;
+                $device->user_id = null;
+                $device->save();
+            }
+
+            // Revoke current token
+            $user->currentAccessToken()->delete();
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

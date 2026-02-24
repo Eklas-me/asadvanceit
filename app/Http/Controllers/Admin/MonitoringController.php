@@ -11,7 +11,7 @@ class MonitoringController extends Controller
     public function index()
     {
         // Only show devices active in the last 1.5 minutes (90 seconds)
-        $devices = \App\Models\Device::with('user')
+        $devices = \App\Models\Device::with(['user', 'lastLoggedInUser'])
             ->where('last_seen', '>=', now()->subSeconds(90))
             ->orderBy('last_seen', 'desc')
             ->get();
@@ -21,7 +21,7 @@ class MonitoringController extends Controller
 
     public function show($id)
     {
-        $device = \App\Models\Device::with('user')->findOrFail($id);
+        $device = \App\Models\Device::with(['user', 'lastLoggedInUser'])->findOrFail($id);
         return view('admin.monitoring.show', compact('device'));
     }
 }

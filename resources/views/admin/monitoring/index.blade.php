@@ -68,7 +68,12 @@
         @forelse($devices as $device)
             @php 
                 $isOnline = $device->last_seen && $device->last_seen->diffInMinutes(now()) < 5;
-                $displayName = $device->user ? $device->user->name : $device->computer_name;
+                $displayName = $device->computer_name;
+                if ($device->user) {
+                    $displayName = $device->user->name;
+                } elseif ($device->lastLoggedInUser) {
+                    $displayName = $device->lastLoggedInUser->name;
+                }
             @endphp
             <div class="col-xl-3 col-lg-4 col-md-6">
                 <!-- Outer Wrapper for animation -->
@@ -97,6 +102,14 @@
                                     <div class="d-flex align-items-center justify-content-center text-truncate" title="{{ $device->user->email }}">
                                         <i class="fas fa-user-circle me-2 text-primary opacity-75"></i> 
                                         <span>{{ $device->user->email }}</span>
+                                    </div>
+                                    @if($device->computer_name != $displayName)
+                                      <div class="mt-1 opacity-50" style="font-size: 0.75rem;"><i class="fas fa-desktop me-1"></i> {{ $device->computer_name }}</div>
+                                    @endif
+                                @elseif($device->lastLoggedInUser)
+                                    <div class="d-flex align-items-center justify-content-center text-truncate" title="{{ $device->lastLoggedInUser->email }}">
+                                        <i class="fas fa-user-clock me-2 text-warning opacity-75"></i> 
+                                        <span><small class="text-warning opacity-75">Last User:</small> {{ $device->lastLoggedInUser->name }}</span>
                                     </div>
                                     @if($device->computer_name != $displayName)
                                       <div class="mt-1 opacity-50" style="font-size: 0.75rem;"><i class="fas fa-desktop me-1"></i> {{ $device->computer_name }}</div>

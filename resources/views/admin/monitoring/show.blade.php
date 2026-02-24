@@ -1,5 +1,17 @@
 @extends('layouts.dashboard')
 
+@php 
+        $displayName = $device->computer_name;
+    $userInfo = "";
+    if ($device->user) {
+        $displayName = $device->user->name;
+        $userInfo = $device->user->email;
+    } elseif ($device->lastLoggedInUser) {
+        $displayName = "[Last User] " . $device->lastLoggedInUser->name;
+        $userInfo = $device->lastLoggedInUser->email;
+    }
+@endphp
+
 @push('styles')
     <style>
         .glass-panel {
@@ -229,7 +241,7 @@
                                 <i class="fas fa-pause" id="playIcon"></i>
                             </button>
                             <div>
-                                <h6 class="text-white mb-0">{{ $device->computer_name }}</h6>
+                                <h6 class="text-white mb-0">{{ $displayName }}</h6>
                                 <small class="text-white-50" id="streamStatus">Connected via WebRTC</small>
                             </div>
                         </div>
@@ -286,7 +298,7 @@
                         </div>
                         <div>
                             <h6 class="text-white mb-0" style="font-size: 0.9rem;">Device Info</h6>
-                            <p class="text-muted small mb-0">{{ $device->computer_name }}</p>
+                            <p class="text-muted small mb-0">{{ $displayName }} {{ $userInfo ? "($userInfo)" : "" }}</p>
                         </div>
                     </div>
                     <div class="pt-2 border-top border-secondary">

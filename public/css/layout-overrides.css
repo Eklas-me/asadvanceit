@@ -53,6 +53,22 @@
     height: calc(100vh - 80px);
 }
 
+.sidebar-wrapper > .nav:first-of-type {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-bottom: 10px;
+}
+
+.sidebar-wrapper > .nav:first-of-type::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-wrapper > .nav:first-of-type::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
 /* Logo Header */
 .logo-header {
     padding: 20px 24px;
@@ -108,9 +124,19 @@
     padding: 8px 16px 8px 48px;
     font-size: 13px;
     display: flex !important;
+    align-items: center;
     visibility: visible !important;
     opacity: 1 !important;
     color: var(--text-secondary) !important;
+}
+
+.nav-collapse .nav-item a .sub-item {
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.4;
+    display: block;
+    flex: 1;
+    padding-left: 10px;
 }
 
 [data-theme="dark"] .nav-collapse .nav-item a {

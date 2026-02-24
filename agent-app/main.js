@@ -184,10 +184,13 @@ logoutBtn.addEventListener('click', async () => {
     if (!invoke) return;
 
     try {
-        // First, trigger logout in the browser to clear sessions
+        // First, trigger backend API logout to clear the DB session for this HWID
+        await invoke('backend_logout', { apiUrl: API_URL.replace('/login', '/logout') });
+
+        // Then, trigger logout in the browser to clear sessions
         await invoke('open_browser', { url: `${BASE_URL}/logout-sync` });
 
-        // Then, clear app session and reload
+        // Finally, clear app session locally and reload
         await invoke('logout');
         window.location.reload();
     } catch (e) {
