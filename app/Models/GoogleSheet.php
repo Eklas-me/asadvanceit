@@ -109,6 +109,7 @@ class GoogleSheet extends Model
             'Night 8 Hours' => 'Night 8 Hours',
             'Day 12 Hours' => 'Day 12 Hours',
             'Night 12 Hours' => 'Night 12 Hours',
+            'Office Only' => 'Office Only',
         ];
     }
 }
