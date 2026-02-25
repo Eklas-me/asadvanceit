@@ -56,6 +56,7 @@
               <option value="Night 8 Hours">Night 8 Hours</option>
               <option value="Day 12 Hours">Day 12 Hours</option>
               <option value="Night 12 Hours">Night 12 Hours</option>
+              <option value="Office Only">Office Only</option>
             </select>
             <label for="shift" class="aero-label-floating">Select Shift</label>
           </div>

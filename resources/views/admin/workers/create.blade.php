@@ -52,7 +52,7 @@
                             <label for="shift" class="form-label">Shift</label>
                             <select class="aero-select" name="shift" id="shift" required>
                                 <option value="">-- Select Shift --</option>
-                                @foreach(['Morning 8 Hours Female', 'Morning 8 Hours', 'Evening 8 Hours', 'Night 8 Hours', 'Day 12 Hours', 'Night 12 Hours'] as $shift)
+                                @foreach(['Morning 8 Hours Female', 'Morning 8 Hours', 'Evening 8 Hours', 'Night 8 Hours', 'Day 12 Hours', 'Night 12 Hours', 'Office Only'] as $shift)
                                     <option value="{{ $shift }}" {{ old('shift') == $shift ? 'selected' : '' }}>
                                         {{ $shift }}
                                     </option>

@@ -158,6 +158,8 @@
                                         12 Hours</option>
                                     <option value="Night 12 Hours" {{ $user->shift === 'Night 12 Hours' ? 'selected' : '' }}>
                                         Night 12 Hours</option>
+                                    <option value="Office Only" {{ $user->shift === 'Office Only' ? 'selected' : '' }}>Office
+                                        Only</option>
                                 </select>
                             </div>
                         </div>
