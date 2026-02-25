@@ -220,14 +220,13 @@
             <div class="aero-card mb-4">
                 <div class="aero-card-header d-flex justify-content-between align-items-center">
                     <h3 class="aero-card-title mb-0">Manage Google Sheets</h3>
-                    <button type="button" class="aero-btn aero-btn-primary btn-sm" data-bs-toggle="collapse"
-                        data-bs-target="#addSheetForm">
+                    <button type="button" class="aero-btn aero-btn-primary btn-sm" onclick="toggleAddSheetForm(this)">
                         <i class="fas fa-plus me-1"></i> Add Sheet
                     </button>
                 </div>
                 <div class="card-body">
-                    <!-- Add New Sheet Form (Collapsed by default) -->
-                    <div class="collapse mb-4" id="addSheetForm">
+                    <!-- Add New Sheet Form (Hidden by default) -->
+                    <div style="display:none;" id="addSheetForm">
                         <div class="border rounded p-3" style="background: var(--bg-tertiary);">
                             <h5 class="mb-3"><i class="fas fa-plus-circle me-2"></i>Add New Sheet</h5>
                             <form action="{{ route('admin.settings.sheets.store') }}" method="POST">
@@ -410,6 +409,17 @@
             </div>
 
             <script>
+                function toggleAddSheetForm(btn) {
+                    var form = document.getElementById('addSheetForm');
+                    if (form.style.display === 'none' || form.style.display === '') {
+                        form.style.display = 'block';
+                        btn.innerHTML = '<i class="fas fa-times me-1"></i> Cancel';
+                    } else {
+                        form.style.display = 'none';
+                        btn.innerHTML = '<i class="fas fa-plus me-1"></i> Add Sheet';
+                    }
+                }
+
                 function toggleShiftField(selectEl, fieldId) {
                     const field = document.getElementById(fieldId);
                     if (selectEl.value === 'shift_based') {
