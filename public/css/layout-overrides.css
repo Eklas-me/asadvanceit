@@ -169,16 +169,16 @@
     color: var(--text-secondary) !important;
 }
 
-.collapse {
-    /* .collapse transition is handled by Bootstrap 5 natively */
+.sidebar .collapse {
+    /* Sidebar collapse transition handled by Bootstrap 5 natively */
 }
 
-.collapse:not(.show):not(.collapsing) {
+.sidebar .collapse:not(.show):not(.collapsing) {
     display: none !important;
 }
 
-.collapse.show,
-.collapse.collapsing {
+.sidebar .collapse.show,
+.sidebar .collapse.collapsing {
     display: block !important;
 }
 
