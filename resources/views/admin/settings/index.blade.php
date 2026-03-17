@@ -1,6 +1,100 @@
 @extends('layouts.dashboard')
 
 @section('content')
+    <style>
+        .user-selection-list {
+            max-height: 250px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px;
+        }
+
+        .user-selection-item {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            margin-bottom: 4px;
+        }
+
+        .user-selection-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .user-selection-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(4px);
+        }
+
+        .user-selection-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        .user-selection-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .user-selection-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .user-selection-email {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .user-search-wrapper {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .user-search-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .user-search-input {
+            padding-left: 40px !important;
+        }
+
+        /* Custom scrollbar for user list */
+        .user-selection-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .user-selection-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .user-selection-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .user-selection-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
     <div class="page-header fade-in">
         <h1 class="page-title">Settings</h1>
     </div>
@@ -273,13 +367,24 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3 aero-form-group" id="new_users_field" style="display: none;">
-                                            <label class="aero-label">Select Users</label>
-                                            <select name="user_ids[]" class="aero-select" multiple style="height: 120px; padding: 8px;">
+                                            <label class="aero-label">Select Users (Active Only)</label>
+                                            <div class="user-search-wrapper">
+                                                <i class="fas fa-search"></i>
+                                                <input type="text" class="aero-input user-search-input" placeholder="Search by name or email..." 
+                                                       onkeyup="filterUsers(this, 'new_user_list')">
+                                            </div>
+                                            <div class="user-selection-list" id="new_user_list">
                                                 @foreach($users as $user)
-                                                    <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                                                    <label class="user-selection-item">
+                                                        <input type="checkbox" name="user_ids[]" value="{{ $user->id }}">
+                                                        <div class="user-selection-info">
+                                                            <span class="user-selection-name">{{ $user->name }}</span>
+                                                            <span class="user-selection-email">{{ $user->email }}</span>
+                                                        </div>
+                                                    </label>
                                                 @endforeach
-                                            </select>
-                                            <small class="text-muted d-block mt-1">Hold CTRL (or CMD) to select multiple</small>
+                                            </div>
+                                            <small class="text-muted d-block mt-2"><i class="fas fa-info-circle me-1"></i>Only active users are listed here.</small>
                                         </div>
                                     </div>
                                     <div class="mt-2 text-end">
@@ -402,6 +507,22 @@
                         if (usersField) usersField.style.display = 'none';
                     }
                 }
+
+                function filterUsers(input, listId) {
+                    const filter = input.value.toLowerCase();
+                    const list = document.getElementById(listId);
+                    const items = list.getElementsByClassName('user-selection-item');
+
+                    for (let i = 0; i < items.length; i++) {
+                        const name = items[i].querySelector('.user-selection-name').textContent.toLowerCase();
+                        const email = items[i].querySelector('.user-selection-email').textContent.toLowerCase();
+                        if (name.includes(filter) || email.includes(filter)) {
+                            items[i].style.display = "";
+                        } else {
+                            items[i].style.display = "none";
+                        }
+                    }
+                }
             </script>
 
             <div class="aero-card">
@@ -482,16 +603,26 @@
                                     </div>
                                     <div class="col-md-6 mb-3 aero-form-group" id="edit_users_field_{{ $sheet->id }}"
                                         style="{{ $sheet->permission_type !== 'specific_users' ? 'display:none;' : '' }}">
-                                        <label class="aero-label">Select Users</label>
-                                        <select name="user_ids[]" class="aero-select" multiple style="height: 120px; padding: 8px;">
+                                        <label class="aero-label">Select Users (Active Only)</label>
+                                        <div class="user-search-wrapper">
+                                            <i class="fas fa-search"></i>
+                                            <input type="text" class="aero-input user-search-input" placeholder="Search users for this sheet..." 
+                                                   onkeyup="filterUsers(this, 'edit_user_list_{{ $sheet->id }}')">
+                                        </div>
+                                        <div class="user-selection-list" id="edit_user_list_{{ $sheet->id }}">
                                             @php $assignedUserIds = $sheet->users->pluck('id')->toArray(); @endphp
                                             @foreach($users as $user)
-                                                <option value="{{ $user->id }}" {{ in_array($user->id, $assignedUserIds) ? 'selected' : '' }}>
-                                                    {{ $user->name }} ({{ $user->email }})
-                                                </option>
+                                                <label class="user-selection-item">
+                                                    <input type="checkbox" name="user_ids[]" value="{{ $user->id }}" 
+                                                        {{ in_array($user->id, $assignedUserIds) ? 'checked' : '' }}>
+                                                    <div class="user-selection-info">
+                                                        <span class="user-selection-name">{{ $user->name }}</span>
+                                                        <span class="user-selection-email">{{ $user->email }}</span>
+                                                    </div>
+                                                </label>
                                             @endforeach
-                                        </select>
-                                        <small class="text-muted d-block mt-1">Hold CTRL (or CMD) to select multiple</small>
+                                        </div>
+                                        <small class="text-muted d-block mt-2"><i class="fas fa-info-circle me-1"></i>Existing assignments are preserved.</small>
                                     </div>
                                 </div>
                             </div>

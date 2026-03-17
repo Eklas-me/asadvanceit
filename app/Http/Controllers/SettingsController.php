@@ -12,7 +12,10 @@ class SettingsController extends Controller
 {
     public function index()
     {
-        $users = \App\Models\User::where('role', 'user')->get();
+        $users = \App\Models\User::where('role', 'user')
+            ->where('status', 'active')
+            ->orderBy('name', 'asc')
+            ->get();
         return view('admin.settings.index', compact('users'));
     }
 
