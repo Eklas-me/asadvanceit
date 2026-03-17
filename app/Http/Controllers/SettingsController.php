@@ -12,7 +12,8 @@ class SettingsController extends Controller
 {
     public function index()
     {
-        return view('admin.settings.index');
+        $users = \App\Models\User::where('role', 'user')->get();
+        return view('admin.settings.index', compact('users'));
     }
 
     public function clearCache()
@@ -143,14 +144,16 @@ class SettingsController extends Controller
             'title' => 'required|string|max:255',
             'url' => 'required|url',
             'icon' => 'nullable|string|max:100',
-            'permission_type' => 'required|in:public,shift_based,admin_only',
+            'permission_type' => 'required|in:public,shift_based,admin_only,specific_users',
             'shift' => 'required_if:permission_type,shift_based|nullable|string',
+            'user_ids' => 'required_if:permission_type,specific_users|array',
+            'user_ids.*' => 'exists:users,id',
         ]);
 
         try {
             $slug = \App\Models\GoogleSheet::generateSlug($request->title);
 
-            \App\Models\GoogleSheet::create([
+            $sheet = \App\Models\GoogleSheet::create([
                 'slug' => $slug,
                 'title' => $request->title,
                 'url' => $request->url,
@@ -160,6 +163,10 @@ class SettingsController extends Controller
                 'is_visible' => true,
                 'order' => \App\Models\GoogleSheet::max('order') + 1,
             ]);
+
+            if ($request->permission_type === 'specific_users' && $request->has('user_ids')) {
+                $sheet->users()->attach($request->user_ids);
+            }
 
             return back()->with('success', 'Google Sheet added successfully!');
         } catch (\Exception $e) {
@@ -177,8 +184,10 @@ class SettingsController extends Controller
             'title' => 'required|string|max:255',
             'url' => 'required|url',
             'icon' => 'nullable|string|max:100',
-            'permission_type' => 'required|in:public,shift_based,admin_only',
+            'permission_type' => 'required|in:public,shift_based,admin_only,specific_users',
             'shift' => 'required_if:permission_type,shift_based|nullable|string',
+            'user_ids' => 'required_if:permission_type,specific_users|array',
+            'user_ids.*' => 'exists:users,id',
         ]);
 
         try {
@@ -191,6 +200,12 @@ class SettingsController extends Controller
                 'permission_type' => $request->permission_type,
                 'shift' => $request->permission_type === 'shift_based' ? $request->shift : null,
             ]);
+
+            if ($request->permission_type === 'specific_users' && $request->has('user_ids')) {
+                $sheet->users()->sync($request->user_ids);
+            } else {
+                $sheet->users()->detach();
+            }
 
             return back()->with('success', 'Google Sheet updated successfully!');
         } catch (\Exception $e) {

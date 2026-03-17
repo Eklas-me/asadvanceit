@@ -94,6 +94,11 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
+    public function googleSheets()
+    {
+        return $this->belongsToMany(GoogleSheet::class, 'google_sheet_user');
+    }
+
     /**
      * Set the password attribute - store as-is without automatic hashing
      * Our MD5UserProvider handles validation for both MD5 and bcrypt

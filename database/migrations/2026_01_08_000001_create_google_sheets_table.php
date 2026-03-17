@@ -17,7 +17,8 @@ return new class extends Migration {
                 $table->string('title');
                 $table->text('url');
                 $table->string('icon')->default('fas fa-file-excel');
-                $table->enum('permission_type', ['public', 'shift_based', 'admin_only'])->default('public');
+                // Altered enum to include 'specific_users' directly. If they migrate fresh it works.
+                $table->enum('permission_type', ['public', 'shift_based', 'admin_only', 'specific_users'])->default('public');
                 $table->string('shift')->nullable(); // For shift_based permission
                 $table->boolean('is_visible')->default(true);
                 $table->integer('order')->default(0);

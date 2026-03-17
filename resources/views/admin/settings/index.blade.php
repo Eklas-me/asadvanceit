@@ -257,6 +257,7 @@
                                             <option value="public">Public (Everyone)</option>
                                             <option value="shift_based">Shift Based</option>
                                             <option value="admin_only">Admin Only</option>
+                                            <option value="specific_users">Specific Users</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6 mb-3" id="new_shift_field" style="display: none;">
@@ -267,6 +268,15 @@
                                                 <option value="{{ $key }}">{{ $label }}</option>
                                             @endforeach
                                         </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3" id="new_users_field" style="display: none;">
+                                        <label class="form-label">Select Users</label>
+                                        <select name="user_ids[]" class="form-select" multiple style="height: 120px;">
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                                            @endforeach
+                                        </select>
+                                        <small class="text-muted">Hold CTRL (or CMD) to select multiple</small>
                                     </div>
                                 </div>
                                 <button type="submit" class="aero-btn aero-btn-success">
@@ -380,6 +390,7 @@
                                                         <option value="public" {{ $sheet->permission_type === 'public' ? 'selected' : '' }}>Public</option>
                                                         <option value="shift_based" {{ $sheet->permission_type === 'shift_based' ? 'selected' : '' }}>Shift Based</option>
                                                         <option value="admin_only" {{ $sheet->permission_type === 'admin_only' ? 'selected' : '' }}>Admin Only</option>
+                                                        <option value="specific_users" {{ $sheet->permission_type === 'specific_users' ? 'selected' : '' }}>Specific Users</option>
                                                     </select>
                                                 </div>
                                                 <div class="mb-3" id="edit_shift_field_{{ $sheet->id }}"
@@ -392,6 +403,19 @@
                                                                 {{ $label }}</option>
                                                         @endforeach
                                                     </select>
+                                                </div>
+                                                <div class="mb-3" id="edit_users_field_{{ $sheet->id }}"
+                                                    style="{{ $sheet->permission_type !== 'specific_users' ? 'display:none;' : '' }}">
+                                                    <label class="form-label">Select Users</label>
+                                                    <select name="user_ids[]" class="form-select" multiple style="height: 120px;">
+                                                        @php $assignedUserIds = $sheet->users->pluck('id')->toArray(); @endphp
+                                                        @foreach($users as $user)
+                                                            <option value="{{ $user->id }}" {{ in_array($user->id, $assignedUserIds) ? 'selected' : '' }}>
+                                                                {{ $user->name }} ({{ $user->email }})
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <small class="text-muted">Hold CTRL (or CMD) to select multiple</small>
                                                 </div>
                                             </div>
                                             <div class="modal-footer" style="border-color: var(--border-color);">
@@ -421,11 +445,28 @@
                 }
 
                 function toggleShiftField(selectEl, fieldId) {
-                    const field = document.getElementById(fieldId);
+                    const shiftField = document.getElementById(fieldId);
+                    
+                    // Determine if this is an edit modal or the new form by checking if it contains an ID
+                    const isEdit = fieldId.includes('edit_shift_field_');
+                    let usersFieldId = 'new_users_field';
+                    
+                    if (isEdit) {
+                        const id = fieldId.split('_').pop();
+                        usersFieldId = 'edit_users_field_' + id;
+                    }
+                    
+                    const usersField = document.getElementById(usersFieldId);
+
                     if (selectEl.value === 'shift_based') {
-                        field.style.display = 'block';
+                        if (shiftField) shiftField.style.display = 'block';
+                        if (usersField) usersField.style.display = 'none';
+                    } else if (selectEl.value === 'specific_users') {
+                        if (shiftField) shiftField.style.display = 'none';
+                        if (usersField) usersField.style.display = 'block';
                     } else {
-                        field.style.display = 'none';
+                        if (shiftField) shiftField.style.display = 'none';
+                        if (usersField) usersField.style.display = 'none';
                     }
                 }
             </script>

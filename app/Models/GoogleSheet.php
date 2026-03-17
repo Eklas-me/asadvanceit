@@ -68,7 +68,20 @@ class GoogleSheet extends Model
             return $user->shift === $this->shift;
         }
 
+        // Specific users
+        if ($this->permission_type === 'specific_users') {
+            return $this->users()->where('user_id', $user->id)->exists();
+        }
+
         return false;
+    }
+
+    /**
+     * Users assigned to this sheet (when permission_type is specific_users)
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'google_sheet_user');
     }
 
     /**
