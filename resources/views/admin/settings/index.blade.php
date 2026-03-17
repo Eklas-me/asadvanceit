@@ -357,71 +357,74 @@
 
                         <!-- Edit Modals (Moved outside table to prevent flickering) -->
                         @foreach($googleSheets as $sheet)
-                            <div class="modal fade" id="editSheet{{ $sheet->id }}" tabindex="-1">
-                                <div class="modal-dialog">
-                                    <div class="modal-content" style="background: var(--card-bg); color: var(--text-primary);">
+                            <div class="modal fade" id="editSheet{{ $sheet->id }}" tabindex="-1" aria-labelledby="editSheetLabel{{ $sheet->id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content aero-card" style="border: none; padding: 0;">
                                         <form action="{{ route('admin.settings.sheets.update', $sheet->id) }}" method="POST">
                                             @csrf
                                             @method('PUT')
-                                            <div class="modal-header" style="border-color: var(--border-color);">
-                                                <h5 class="modal-title">Edit: {{ $sheet->title }}</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            <div class="modal-header aero-card-header" style="border-bottom: 1px solid var(--border-color); border-radius: 12px 12px 0 0;">
+                                                <h5 class="modal-title aero-card-title mb-0" id="editSheetLabel{{ $sheet->id }}">
+                                                    <i class="fas fa-edit me-2"></i>Edit Sheet: {{ $sheet->title }}
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1) grayscale(100%) brightness(200%);"></button>
                                             </div>
-                                            <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label class="form-label">Title</label>
-                                                    <input type="text" name="title" class="form-control" value="{{ $sheet->title }}"
-                                                        required>
+                                            <div class="modal-body p-4">
+                                                <div class="mb-3 aero-form-group">
+                                                    <label class="aero-label">Title <span class="text-danger">*</span></label>
+                                                    <input type="text" name="title" class="aero-input" value="{{ $sheet->title }}" required>
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Icon Class</label>
-                                                    <input type="text" name="icon" class="form-control" value="{{ $sheet->icon }}">
+                                                <div class="mb-3 aero-form-group">
+                                                    <label class="aero-label">Icon Class</label>
+                                                    <input type="text" name="icon" class="aero-input" value="{{ $sheet->icon }}">
+                                                    <small class="text-muted d-block mt-1">FontAwesome icon class (e.g. fas fa-file-excel)</small>
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Google Sheet URL</label>
-                                                    <input type="url" name="url" class="form-control" value="{{ $sheet->url }}"
-                                                        required>
+                                                <div class="mb-3 aero-form-group">
+                                                    <label class="aero-label">Google Sheet URL <span class="text-danger">*</span></label>
+                                                    <input type="url" name="url" class="aero-input" value="{{ $sheet->url }}" required>
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Permission Type</label>
-                                                    <select name="permission_type" class="form-select"
-                                                        id="edit_permission_{{ $sheet->id }}"
-                                                        onchange="toggleShiftField(this, 'edit_shift_field_{{ $sheet->id }}')">
-                                                        <option value="public" {{ $sheet->permission_type === 'public' ? 'selected' : '' }}>Public</option>
-                                                        <option value="shift_based" {{ $sheet->permission_type === 'shift_based' ? 'selected' : '' }}>Shift Based</option>
-                                                        <option value="admin_only" {{ $sheet->permission_type === 'admin_only' ? 'selected' : '' }}>Admin Only</option>
-                                                        <option value="specific_users" {{ $sheet->permission_type === 'specific_users' ? 'selected' : '' }}>Specific Users</option>
-                                                    </select>
-                                                </div>
-                                                <div class="mb-3" id="edit_shift_field_{{ $sheet->id }}"
-                                                    style="{{ $sheet->permission_type !== 'shift_based' ? 'display:none;' : '' }}">
-                                                    <label class="form-label">Shift</label>
-                                                    <select name="shift" class="form-select">
-                                                        <option value="">Select Shift...</option>
-                                                        @foreach(\App\Models\GoogleSheet::getAvailableShifts() as $key => $label)
-                                                            <option value="{{ $key }}" {{ $sheet->shift === $key ? 'selected' : '' }}>
-                                                                {{ $label }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="mb-3" id="edit_users_field_{{ $sheet->id }}"
-                                                    style="{{ $sheet->permission_type !== 'specific_users' ? 'display:none;' : '' }}">
-                                                    <label class="form-label">Select Users</label>
-                                                    <select name="user_ids[]" class="form-select" multiple style="height: 120px;">
-                                                        @php $assignedUserIds = $sheet->users->pluck('id')->toArray(); @endphp
-                                                        @foreach($users as $user)
-                                                            <option value="{{ $user->id }}" {{ in_array($user->id, $assignedUserIds) ? 'selected' : '' }}>
-                                                                {{ $user->name }} ({{ $user->email }})
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <small class="text-muted">Hold CTRL (or CMD) to select multiple</small>
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3 aero-form-group">
+                                                        <label class="aero-label">Permission Type <span class="text-danger">*</span></label>
+                                                        <select name="permission_type" class="aero-select"
+                                                            id="edit_permission_{{ $sheet->id }}"
+                                                            onchange="toggleShiftField(this, 'edit_shift_field_{{ $sheet->id }}')">
+                                                            <option value="public" {{ $sheet->permission_type === 'public' ? 'selected' : '' }}>Public (Everyone)</option>
+                                                            <option value="shift_based" {{ $sheet->permission_type === 'shift_based' ? 'selected' : '' }}>Shift Based</option>
+                                                            <option value="admin_only" {{ $sheet->permission_type === 'admin_only' ? 'selected' : '' }}>Admin Only</option>
+                                                            <option value="specific_users" {{ $sheet->permission_type === 'specific_users' ? 'selected' : '' }}>Specific Users</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3 aero-form-group" id="edit_shift_field_{{ $sheet->id }}"
+                                                        style="{{ $sheet->permission_type !== 'shift_based' ? 'display:none;' : '' }}">
+                                                        <label class="aero-label">Shift</label>
+                                                        <select name="shift" class="aero-select">
+                                                            <option value="">Select Shift...</option>
+                                                            @foreach(\App\Models\GoogleSheet::getAvailableShifts() as $key => $label)
+                                                                <option value="{{ $key }}" {{ $sheet->shift === $key ? 'selected' : '' }}>
+                                                                    {{ $label }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3 aero-form-group" id="edit_users_field_{{ $sheet->id }}"
+                                                        style="{{ $sheet->permission_type !== 'specific_users' ? 'display:none;' : '' }}">
+                                                        <label class="aero-label">Select Users</label>
+                                                        <select name="user_ids[]" class="aero-select" multiple style="height: 120px; padding: 8px;">
+                                                            @php $assignedUserIds = $sheet->users->pluck('id')->toArray(); @endphp
+                                                            @foreach($users as $user)
+                                                                <option value="{{ $user->id }}" {{ in_array($user->id, $assignedUserIds) ? 'selected' : '' }}>
+                                                                    {{ $user->name }} ({{ $user->email }})
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                        <small class="text-muted d-block mt-1">Hold CTRL (or CMD) to select multiple</small>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div class="modal-footer" style="border-color: var(--border-color);">
-                                                <button type="button" class="btn btn-secondary"
-                                                    data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="aero-btn aero-btn-primary">Save Changes</button>
+                                            <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding: 16px 24px;">
+                                                <button type="button" class="aero-btn me-2" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color);"
+                                                    data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancel</button>
+                                                <button type="submit" class="aero-btn aero-btn-primary"><i class="fas fa-save me-1"></i> Save Changes</button>
                                             </div>
                                         </form>
                                     </div>
