@@ -357,17 +357,17 @@
 
                         <!-- Edit Modals (Moved outside table to prevent flickering) -->
                         @foreach($googleSheets as $sheet)
-                            <div class="modal fade" id="editSheet{{ $sheet->id }}" tabindex="-1" aria-labelledby="editSheetLabel{{ $sheet->id }}" aria-hidden="true">
+                            <div class="modal fade" id="editSheet{{ $sheet->id }}" tabindex="-1" aria-labelledby="editSheetLabel{{ $sheet->id }}" aria-hidden="true" data-bs-backdrop="static">
                                 <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content aero-card" style="border: none; padding: 0;">
+                                    <div class="modal-content" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                                         <form action="{{ route('admin.settings.sheets.update', $sheet->id) }}" method="POST">
                                             @csrf
                                             @method('PUT')
-                                            <div class="modal-header aero-card-header" style="border-bottom: 1px solid var(--border-color); border-radius: 12px 12px 0 0;">
-                                                <h5 class="modal-title aero-card-title mb-0" id="editSheetLabel{{ $sheet->id }}">
-                                                    <i class="fas fa-edit me-2"></i>Edit Sheet: {{ $sheet->title }}
+                                            <div class="modal-header" style="border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.2); padding: 20px 24px;">
+                                                <h5 class="modal-title mb-0" id="editSheetLabel{{ $sheet->id }}" style="color: var(--text-primary); font-weight: 600;">
+                                                    <i class="fas fa-edit me-2" style="color: var(--accent-blue);"></i>Edit Sheet: {{ $sheet->title }}
                                                 </h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1) grayscale(100%) brightness(200%);"></button>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1) grayscale(100%) brightness(200%); opacity: 0.8;"></button>
                                             </div>
                                             <div class="modal-body p-4">
                                                 <div class="mb-3 aero-form-group">
