@@ -430,6 +430,8 @@
                                                     <span class="badge bg-success">Public</span>
                                                 @elseif($sheet->permission_type === 'shift_based')
                                                     <span class="badge bg-info">{{ $sheet->shift }}</span>
+                                                @elseif($sheet->permission_type === 'specific_users')
+                                                    <span class="badge bg-primary">Specific Users</span>
                                                 @else
                                                     <span class="badge bg-danger">Admin Only</span>
                                                 @endif
