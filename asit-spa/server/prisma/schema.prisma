@@ -1,0 +1,311 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model attendance {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id           BigInt    @db.UnsignedBigInt
+  shift             String?   @db.VarChar(255)
+  date              DateTime? @db.Date
+  shift_start       DateTime? @db.DateTime(0)
+  shift_end         DateTime? @db.DateTime(0)
+  check_in          DateTime? @db.DateTime(0)
+  check_out         DateTime? @db.DateTime(0)
+  total_minutes     Int       @default(0)
+  overtime_minutes  Int       @default(0)
+  status            String    @default("Pending") @db.VarChar(255)
+  worked_hours_type String?   @db.VarChar(255)
+  created_at        DateTime? @db.Timestamp(0)
+  updated_at        DateTime? @db.Timestamp(0)
+  users             users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "attendance_user_id_foreign")
+
+  @@index([user_id], map: "attendance_user_id_foreign")
+}
+
+model cache {
+  key        String @id @db.VarChar(255)
+  value      String @db.MediumText
+  expiration Int
+}
+
+model cache_locks {
+  key        String @id @db.VarChar(255)
+  owner      String @db.VarChar(255)
+  expiration Int
+}
+
+model devices {
+  id                                          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  hardware_id                                 String    @unique(map: "devices_hardware_id_unique") @db.VarChar(255)
+  computer_name                               String    @db.VarChar(255)
+  agent_version                               String?   @db.VarChar(255)
+  user_id                                     BigInt?   @db.UnsignedBigInt
+  last_seen                                   DateTime? @db.Timestamp(0)
+  created_at                                  DateTime? @db.Timestamp(0)
+  updated_at                                  DateTime? @db.Timestamp(0)
+  last_logged_in_user_id                      BigInt?   @db.UnsignedBigInt
+  users_devices_last_logged_in_user_idTousers users?    @relation("devices_last_logged_in_user_idTousers", fields: [last_logged_in_user_id], references: [id], onUpdate: Restrict, map: "devices_last_logged_in_user_id_foreign")
+  users_devices_user_idTousers                users?    @relation("devices_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "devices_user_id_foreign")
+
+  @@index([last_logged_in_user_id], map: "devices_last_logged_in_user_id_foreign")
+  @@index([user_id], map: "devices_user_id_foreign")
+}
+
+model failed_jobs {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid       String   @unique(map: "failed_jobs_uuid_unique") @db.VarChar(255)
+  connection String   @db.Text
+  queue      String   @db.Text
+  payload    String   @db.LongText
+  exception  String   @db.LongText
+  failed_at  DateTime @default(now()) @db.Timestamp(0)
+}
+
+model google_sheet_user {
+  id              BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  google_sheet_id BigInt        @db.UnsignedBigInt
+  user_id         BigInt        @db.UnsignedBigInt
+  created_at      DateTime?     @db.Timestamp(0)
+  updated_at      DateTime?     @db.Timestamp(0)
+  google_sheets   google_sheets @relation(fields: [google_sheet_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "google_sheet_user_google_sheet_id_foreign")
+  users           users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "google_sheet_user_user_id_foreign")
+
+  @@unique([google_sheet_id, user_id], map: "google_sheet_user_google_sheet_id_user_id_unique")
+  @@index([user_id], map: "google_sheet_user_user_id_foreign")
+}
+
+model google_sheets {
+  id                BigInt                         @id @default(autoincrement()) @db.UnsignedBigInt
+  slug              String                         @unique(map: "google_sheets_slug_unique") @db.VarChar(255)
+  title             String                         @db.VarChar(255)
+  url               String                         @db.Text
+  icon              String                         @default("fas fa-file-excel") @db.VarChar(255)
+  permission_type   google_sheets_permission_type? @default(public)
+  shift             String?                        @db.VarChar(255)
+  is_visible        Boolean                        @default(true)
+  order             Int                            @default(0)
+  created_at        DateTime?                      @db.Timestamp(0)
+  updated_at        DateTime?                      @db.Timestamp(0)
+  google_sheet_user google_sheet_user[]
+}
+
+model job_batches {
+  id             String  @id @db.VarChar(255)
+  name           String  @db.VarChar(255)
+  total_jobs     Int
+  pending_jobs   Int
+  failed_jobs    Int
+  failed_job_ids String  @db.LongText
+  options        String? @db.MediumText
+  cancelled_at   Int?
+  created_at     Int
+  finished_at    Int?
+}
+
+model jobs {
+  id           BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  queue        String @db.VarChar(255)
+  payload      String @db.LongText
+  attempts     Int    @db.UnsignedTinyInt
+  reserved_at  Int?   @db.UnsignedInt
+  available_at Int    @db.UnsignedInt
+  created_at   Int    @db.UnsignedInt
+
+  @@index([queue], map: "jobs_queue_index")
+}
+
+model leads {
+  id                          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id                     BigInt?   @db.UnsignedBigInt
+  task_date                   DateTime  @db.Date
+  account_email               String?   @db.VarChar(255)
+  password                    String?   @db.VarChar(255)
+  tinder_username             String?   @db.VarChar(255)
+  token                       String?   @db.VarChar(255)
+  numbers                     String?   @db.VarChar(255)
+  lat_long                    String?   @db.VarChar(255)
+  comments                    String?   @db.Text
+  recovery                    String?   @db.VarChar(255)
+  admin_id                    BigInt?   @db.UnsignedBigInt
+  created_at                  DateTime? @db.Timestamp(0)
+  updated_at                  DateTime? @db.Timestamp(0)
+  users_leads_admin_idTousers users?    @relation("leads_admin_idTousers", fields: [admin_id], references: [id], onUpdate: Restrict, map: "leads_admin_id_foreign")
+  users_leads_user_idTousers  users?    @relation("leads_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "leads_user_id_foreign")
+
+  @@index([admin_id], map: "leads_admin_id_foreign")
+  @@index([user_id], map: "leads_user_id_foreign")
+}
+
+model live_tokens {
+  id                                BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id                           BigInt?               @db.UnsignedBigInt
+  admin_id                          BigInt?               @db.UnsignedBigInt
+  user_name                         String                @db.VarChar(255)
+  live_token                        String                @db.LongText
+  user_type                         live_tokens_user_type
+  insert_time                       DateTime              @default(now()) @db.Timestamp(0)
+  created_at                        DateTime?             @db.Timestamp(0)
+  updated_at                        DateTime?             @db.Timestamp(0)
+  token_hash                        String?               @db.Char(32)
+  users_live_tokens_admin_idTousers users?                @relation("live_tokens_admin_idTousers", fields: [admin_id], references: [id], onUpdate: Restrict, map: "live_tokens_admin_id_foreign")
+  users_live_tokens_user_idTousers  users?                @relation("live_tokens_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "live_tokens_user_id_foreign")
+
+  @@index([admin_id], map: "live_tokens_admin_id_foreign")
+  @@index([insert_time], map: "live_tokens_insert_time_index")
+  @@index([token_hash], map: "live_tokens_token_hash_index")
+  @@index([user_id, insert_time], map: "live_tokens_user_id_insert_time_index")
+}
+
+model magic_login_tokens {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  token      String    @unique(map: "magic_login_tokens_token_unique") @db.VarChar(64)
+  expires_at DateTime  @default(now()) @db.Timestamp(0)
+  used       Boolean   @default(false)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "magic_login_tokens_user_id_foreign")
+
+  @@index([user_id], map: "magic_login_tokens_user_id_foreign")
+}
+
+model messages {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  sender_type   String    @db.VarChar(255)
+  sender_id     BigInt    @db.UnsignedBigInt
+  receiver_type String    @db.VarChar(255)
+  receiver_id   BigInt    @db.UnsignedBigInt
+  message       String    @db.Text
+  is_read       Boolean   @default(false)
+  created_at    DateTime? @db.Timestamp(0)
+  updated_at    DateTime? @db.Timestamp(0)
+
+  @@index([sender_id, receiver_id], map: "messages_sender_id_receiver_id_index")
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  migration String @db.VarChar(255)
+  batch     Int
+}
+
+model notifications {
+  id         BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  title      String?              @db.VarChar(255)
+  message    String               @db.Text
+  status     notifications_status @default(unread)
+  created_at DateTime?            @db.Timestamp(0)
+  updated_at DateTime?            @db.Timestamp(0)
+  user_id    BigInt?              @db.UnsignedBigInt
+  users      users?               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "notifications_user_id_foreign")
+
+  @@index([user_id], map: "notifications_user_id_foreign")
+}
+
+model password_reset_tokens {
+  email      String    @id @db.VarChar(255)
+  token      String    @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+}
+
+model personal_access_tokens {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tokenable_type String    @db.VarChar(255)
+  tokenable_id   BigInt    @db.UnsignedBigInt
+  name           String    @db.VarChar(255)
+  token          String    @unique(map: "personal_access_tokens_token_unique") @db.VarChar(64)
+  abilities      String?   @db.Text
+  last_used_at   DateTime? @db.Timestamp(0)
+  expires_at     DateTime? @db.Timestamp(0)
+  created_at     DateTime? @db.Timestamp(0)
+  updated_at     DateTime? @db.Timestamp(0)
+
+  @@index([tokenable_type, tokenable_id], map: "personal_access_tokens_tokenable_type_tokenable_id_index")
+}
+
+model sessions {
+  id            String  @id @db.VarChar(255)
+  user_id       BigInt? @db.UnsignedBigInt
+  ip_address    String? @db.VarChar(45)
+  user_agent    String? @db.Text
+  payload       String  @db.LongText
+  last_activity Int
+
+  @@index([last_activity], map: "sessions_last_activity_index")
+  @@index([user_id], map: "sessions_user_id_index")
+}
+
+model site_settings {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  key        String    @unique(map: "site_settings_key_unique") @db.VarChar(255)
+  value      String?   @db.Text
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id                                            BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  old_id                                        Int?
+  name                                          String               @db.VarChar(255)
+  email                                         String               @unique(map: "users_email_unique") @db.VarChar(255)
+  password                                      String               @db.VarChar(255)
+  needs_password_upgrade                        Boolean              @default(false)
+  phone                                         String?              @db.VarChar(255)
+  role                                          users_role           @default(user)
+  profile_photo                                 String?              @db.VarChar(255)
+  shift                                         String?              @db.VarChar(255)
+  gender                                        users_gender?
+  status                                        String               @default("pending") @db.VarChar(50)
+  verification_code                             String?              @db.VarChar(255)
+  verification_code_expires_at                  DateTime?            @db.Timestamp(0)
+  is_core_admin                                 Boolean              @default(false)
+  email_verified_at                             DateTime?            @db.Timestamp(0)
+  remember_token                                String?              @db.VarChar(100)
+  last_seen                                     DateTime?            @db.Timestamp(0)
+  created_at                                    DateTime?            @db.Timestamp(0)
+  updated_at                                    DateTime?            @db.Timestamp(0)
+  attendance                                    attendance[]
+  devices_devices_last_logged_in_user_idTousers devices[]            @relation("devices_last_logged_in_user_idTousers")
+  devices_devices_user_idTousers                devices[]            @relation("devices_user_idTousers")
+  google_sheet_user                             google_sheet_user[]
+  leads_leads_admin_idTousers                   leads[]              @relation("leads_admin_idTousers")
+  leads_leads_user_idTousers                    leads[]              @relation("leads_user_idTousers")
+  live_tokens_live_tokens_admin_idTousers       live_tokens[]        @relation("live_tokens_admin_idTousers")
+  live_tokens_live_tokens_user_idTousers        live_tokens[]        @relation("live_tokens_user_idTousers")
+  magic_login_tokens                            magic_login_tokens[]
+  notifications                                 notifications[]
+}
+
+enum notifications_status {
+  unread
+  read
+}
+
+enum google_sheets_permission_type {
+  public
+  shift_based
+  admin_only
+  specific_users
+}
+
+enum live_tokens_user_type {
+  admin
+  user
+}
+
+enum users_role {
+  admin
+  user
+}
+
+enum users_gender {
+  male
+  female
+}
