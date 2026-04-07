@@ -5,8 +5,8 @@ server/node_modules
 
 # Environment variables
 .env
-client/.env
-server/.env
+# client/.env
+# server/.env
 
 # Build outputs
 dist
